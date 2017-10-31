@@ -27,7 +27,7 @@
 #'
 #' @export
 nbglm_mcmc <- function(counts, design_mat, prior_sd_betas, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_betas, rw_sd_rs, log_offset, grain_size = 1L) {
-    .Call('mcmseq_nbglm_mcmc', PACKAGE = 'mcmseq', counts, design_mat, prior_sd_betas, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_betas, rw_sd_rs, log_offset, grain_size)
+    .Call('_mcmseq_nbglm_mcmc', PACKAGE = 'mcmseq', counts, design_mat, prior_sd_betas, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_betas, rw_sd_rs, log_offset, grain_size)
 }
 
 #' Negative Binomial GLM MCMC WLS (title)
@@ -56,7 +56,7 @@ nbglm_mcmc <- function(counts, design_mat, prior_sd_betas, prior_sd_rs, prior_me
 #'
 #' @export
 nbglm_mcmc_wls <- function(counts, design_mat, prior_sd_betas, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, grain_size = 1L) {
-    .Call('mcmseq_nbglm_mcmc_wls', PACKAGE = 'mcmseq', counts, design_mat, prior_sd_betas, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, grain_size)
+    .Call('_mcmseq_nbglm_mcmc_wls', PACKAGE = 'mcmseq', counts, design_mat, prior_sd_betas, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, grain_size)
 }
 
 #' Negative Binomial GLM MCMC WLS Gamma-disp (title)
@@ -86,7 +86,7 @@ nbglm_mcmc_wls <- function(counts, design_mat, prior_sd_betas, prior_sd_rs, prio
 #'
 #' @export
 nbglm_mcmc_wls_gam <- function(counts, design_mat, prior_sd_betas, prior_shape, prior_scale, n_it, rw_sd_rs, log_offset, starting_betas, starting_disps, grain_size = 1L) {
-    .Call('mcmseq_nbglm_mcmc_wls_gam', PACKAGE = 'mcmseq', counts, design_mat, prior_sd_betas, prior_shape, prior_scale, n_it, rw_sd_rs, log_offset, starting_betas, starting_disps, grain_size)
+    .Call('_mcmseq_nbglm_mcmc_wls_gam', PACKAGE = 'mcmseq', counts, design_mat, prior_sd_betas, prior_shape, prior_scale, n_it, rw_sd_rs, log_offset, starting_betas, starting_disps, grain_size)
 }
 
 #' Negative Binomial GLMM MCMC (title)
@@ -119,7 +119,7 @@ nbglm_mcmc_wls_gam <- function(counts, design_mat, prior_sd_betas, prior_shape, 
 #'
 #' @export
 nbmm_mcmc_sampler <- function(counts, design_mat, design_mat_re, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_betas, rw_sd_betas_re, rw_sd_rs, log_offset, grain_size = 1L) {
-    .Call('mcmseq_nbmm_mcmc_sampler', PACKAGE = 'mcmseq', counts, design_mat, design_mat_re, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_betas, rw_sd_betas_re, rw_sd_rs, log_offset, grain_size)
+    .Call('_mcmseq_nbmm_mcmc_sampler', PACKAGE = 'mcmseq', counts, design_mat, design_mat_re, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_betas, rw_sd_betas_re, rw_sd_rs, log_offset, grain_size)
 }
 
 #' Negative Binomial GLMM MCMC WLS(title)
@@ -153,10 +153,10 @@ nbmm_mcmc_sampler <- function(counts, design_mat, design_mat_re, prior_sd_betas,
 #'
 #' @export
 nbmm_mcmc_sampler_wls <- function(counts, design_mat, design_mat_re, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, return_all_re = TRUE, n_re_return = 1L, grain_size = 1L) {
-    .Call('mcmseq_nbmm_mcmc_sampler_wls', PACKAGE = 'mcmseq', counts, design_mat, design_mat_re, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, return_all_re, n_re_return, grain_size)
+    .Call('_mcmseq_nbmm_mcmc_sampler_wls', PACKAGE = 'mcmseq', counts, design_mat, design_mat_re, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, return_all_re, n_re_return, grain_size)
 }
 
-#' Negative Binomial GLMM MCMC WLS Split(title)
+#' Negative Binomial GLMM MCMC WLS Split (title)
 #'
 #' Run an MCMC for the Negative Binomial mixed model (short description, one or two sentences)
 #'
@@ -187,6 +187,6 @@ nbmm_mcmc_sampler_wls <- function(counts, design_mat, design_mat_re, prior_sd_be
 #'
 #' @export
 nbmm_mcmc_sampler_wls_split <- function(counts, design_mat, design_mat_re, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, return_all_re = TRUE, n_re_return = 1L, grain_size = 1L) {
-    .Call('mcmseq_nbmm_mcmc_sampler_wls_split', PACKAGE = 'mcmseq', counts, design_mat, design_mat_re, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, return_all_re, n_re_return, grain_size)
+    .Call('_mcmseq_nbmm_mcmc_sampler_wls_split', PACKAGE = 'mcmseq', counts, design_mat, design_mat_re, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, return_all_re, n_re_return, grain_size)
 }
 

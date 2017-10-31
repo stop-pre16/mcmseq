@@ -1797,7 +1797,7 @@ Rcpp::List nbmm_mcmc_sampler_wls(arma::mat counts,
 
 }
 
-//' Negative Binomial GLMM MCMC WLS Split(title)
+//' Negative Binomial GLMM MCMC WLS Split (title)
 //'
 //' Run an MCMC for the Negative Binomial mixed model (short description, one or two sentences)
 //'
