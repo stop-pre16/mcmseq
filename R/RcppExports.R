@@ -156,6 +156,40 @@ nbmm_mcmc_sampler_wls <- function(counts, design_mat, design_mat_re, prior_sd_be
     .Call('_mcmseq_nbmm_mcmc_sampler_wls', PACKAGE = 'mcmseq', counts, design_mat, design_mat_re, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, return_all_re, n_re_return, grain_size)
 }
 
+#' Negative Binomial GLMM MCMC WLS Gamma Dispersion(title)
+#'
+#' Run an MCMC for the Negative Binomial mixed model (short description, one or two sentences)
+#'
+#' This is where you write details on the function...
+#'
+#' more details....
+#'
+#' @param counts a matrix of counts
+#' @param design_mat design matrix for mean response
+#' @param design_mat_re design matrix for random intercepts
+#' @param prior_sd_betas prior std. dev. for regression coefficients
+#' @param prior_sd_betas_a alpha in inverse gamma prior for random intercept variance
+#' @param prior_sd_betas_b beta in inverse gamma prior for random intercept variance
+#' @param prior_shape vector of prior gamma shape parameters for dispersions
+#' @param prior_scale vector of prior gamma scale parameters for dispersions
+#' @param n_it number of iterations to run MCMC
+#' @param rw_sd_rs random wal std. dev. for proposing dispersion values
+#' @param log_offset vector of offsets on log scale
+#' @param starting_betas matrix of starting values for fixed effects (n_feature x n_beta)
+#' @param return_all_re logical variable to determine if posterior samples are returned for random effects (defaults to TRUE)
+#' @param n_re_return number of random effects to return a full posterior sample for (defaults to 1, only used if return_all_re = FALSE)
+#' @param grain_size minimum size of parallel jobs, defaults to 1, can ignore for now
+#'
+#' @author Brian Vestal
+#'
+#' @return
+#' Returns a list with a cube of regression parameters, including random effects, a matrix of dispersion values, and a matrix of random intercept variances
+#'
+#' @export
+nbmm_mcmc_sampler_wls_gam <- function(counts, design_mat, design_mat_re, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_shape, prior_scale, n_it, rw_sd_rs, log_offset, starting_betas, starting_disps, return_all_re = TRUE, n_re_return = 1L, grain_size = 1L) {
+    .Call('_mcmseq_nbmm_mcmc_sampler_wls_gam', PACKAGE = 'mcmseq', counts, design_mat, design_mat_re, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_shape, prior_scale, n_it, rw_sd_rs, log_offset, starting_betas, starting_disps, return_all_re, n_re_return, grain_size)
+}
+
 #' Negative Binomial GLMM MCMC WLS Split (title)
 #'
 #' Run an MCMC for the Negative Binomial mixed model (short description, one or two sentences)

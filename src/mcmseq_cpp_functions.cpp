@@ -1797,6 +1797,107 @@ Rcpp::List nbmm_mcmc_sampler_wls(arma::mat counts,
 
 }
 
+//' Negative Binomial GLMM MCMC WLS Gamma Dispersion(title)
+//'
+//' Run an MCMC for the Negative Binomial mixed model (short description, one or two sentences)
+//'
+//' This is where you write details on the function...
+//'
+//' more details....
+//'
+//' @param counts a matrix of counts
+//' @param design_mat design matrix for mean response
+//' @param design_mat_re design matrix for random intercepts
+//' @param prior_sd_betas prior std. dev. for regression coefficients
+//' @param prior_sd_betas_a alpha in inverse gamma prior for random intercept variance
+//' @param prior_sd_betas_b beta in inverse gamma prior for random intercept variance
+//' @param prior_shape vector of prior gamma shape parameters for dispersions
+//' @param prior_scale vector of prior gamma scale parameters for dispersions
+//' @param n_it number of iterations to run MCMC
+//' @param rw_sd_rs random wal std. dev. for proposing dispersion values
+//' @param log_offset vector of offsets on log scale
+//' @param starting_betas matrix of starting values for fixed effects (n_feature x n_beta)
+//' @param return_all_re logical variable to determine if posterior samples are returned for random effects (defaults to TRUE)
+//' @param n_re_return number of random effects to return a full posterior sample for (defaults to 1, only used if return_all_re = FALSE)
+//' @param grain_size minimum size of parallel jobs, defaults to 1, can ignore for now
+//'
+//' @author Brian Vestal
+//'
+//' @return
+//' Returns a list with a cube of regression parameters, including random effects, a matrix of dispersion values, and a matrix of random intercept variances
+//'
+//' @export
+// [[Rcpp::export]]
+
+Rcpp::List nbmm_mcmc_sampler_wls_gam(arma::mat counts,
+                                     arma::mat design_mat,
+                                     arma::mat design_mat_re,
+                                     double prior_sd_betas,
+                                     double prior_sd_betas_a,
+                                     double prior_sd_betas_b,
+                                     arma::vec prior_shape,
+                                     arma::vec prior_scale,
+                                     int n_it,
+                                     double rw_sd_rs,
+                                     arma::vec log_offset,
+                                     arma::mat starting_betas,
+                                     arma::vec starting_disps,
+                                     bool return_all_re = true,
+                                     int n_re_return = 1,
+                                     int grain_size = 1){
+  int i, j, n_beta = design_mat.n_cols, n_beta_re = design_mat_re.n_cols, n_feature = counts.n_rows,
+    n_sample = counts.n_cols, n_beta_tot = n_beta + n_beta_re;
+  arma::cube betas(n_feature, n_beta_tot, n_it);
+  arma::mat rhos(n_it, n_feature), betas_cur_mat(n_feature, n_beta_re), sigma2(n_it, n_feature);
+  arma::vec beta_cur(n_beta_re), beta_prop(n_feature), mean_cur(n_sample), mean_prop(n_sample), mean_rho_cur(n_feature);
+  double  a_rand_int_post, b_rand_int_post;
+  double n_beta_start = starting_betas.n_cols;
+  betas.zeros();
+  //betas.randn();
+  betas.slice(0).cols(0, n_beta_start - 1) = starting_betas;
+  //rhos.row(0) = arma::exp(prior_mean_log_rs.t());
+  rhos.row(0) = starting_disps.t();
+  arma::mat design_mat_tot = arma::join_rows(design_mat, design_mat_re);
+
+  sigma2.ones();
+  //sigma2.row(0) += 9;
+
+  //mean_rho_cur = prior_mean_log_rs;
+
+  for(i = 1; i < n_it; i++){
+    betas.slice(i) = para_update_betas_wls_mm(betas.slice(i-1), counts, rhos.row(i-1).t(), log_offset, design_mat_tot, prior_sd_betas, sigma2.row(i-1), n_beta, n_beta_re, n_sample, grain_size);
+    betas_cur_mat = betas.slice(i).cols(n_beta, n_beta_tot - 1);
+    //rhos.row(i) = arma::trans(para_update_rhos(betas.slice(i), counts, rhos.row(i-1).t(), mean_rho_cur, log_offset, design_mat_tot, prior_sd_rs, rw_sd_rs, n_beta_tot, n_sample, grain_size));
+    rhos.row(i) = arma::trans(para_update_rhos_gam(betas.slice(i), counts, rhos.row(i-1).t(), log_offset, design_mat, prior_shape, prior_scale, rw_sd_rs, n_beta_tot, n_sample, grain_size));
+
+    //  Updating random intercept variance
+    for(j = 0; j < n_feature; j++){
+      beta_cur = betas_cur_mat.row(j).t();
+      a_rand_int_post = prior_sd_betas_a + n_beta_re / 2.0;
+      b_rand_int_post = prior_sd_betas_b + arma::dot(beta_cur, beta_cur) / 2.0;
+      sigma2(i, j) = 1.0 / (R::rgamma(a_rand_int_post, 1.0 / b_rand_int_post));
+    }
+
+  }
+
+  // Return list with posterior samples
+  if(!return_all_re){
+    arma::cube betas_sub = betas.tube(arma::span(), arma::span(0, n_beta + n_re_return - 1));
+    return Rcpp::List::create(Rcpp::Named("betas_sample") = betas_sub,
+                              Rcpp::Named("alphas_sample") = rhos,
+                              Rcpp::Named("sigma2_sample") = sigma2);
+  }
+  else{
+    return Rcpp::List::create(Rcpp::Named("betas_sample") = betas,
+                              Rcpp::Named("alphas_sample") = rhos,
+                              Rcpp::Named("sigma2_sample") = sigma2);
+  }
+
+
+}
+
+
+
 //' Negative Binomial GLMM MCMC WLS Split (title)
 //'
 //' Run an MCMC for the Negative Binomial mixed model (short description, one or two sentences)
