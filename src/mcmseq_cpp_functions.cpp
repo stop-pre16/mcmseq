@@ -936,7 +936,8 @@ arma::vec update_betas_wls_mm(const arma::rowvec &beta_cur,
                               const double &re_var,
                               const int &n_beta,
                               const int &n_beta_re,
-                              const int &n_sample){
+                              const int &n_sample,
+                              int &accept_rec){
   arma::vec beta_prop(n_beta + n_beta_re), mean_cur(n_sample), mean_prop(n_sample), beta_cur_tmp = beta_cur.t();
   arma::vec y_tilde(n_sample), y_tilde_prop(n_sample), eta(n_sample), eta_prop(n_sample);
   arma::vec mean_wls_cur(n_beta), mean_wls_prop(n_beta);
@@ -1017,6 +1018,7 @@ arma::vec update_betas_wls_mm(const arma::rowvec &beta_cur,
 
   if(R::runif(0, 1) < exp(mh_prop - mh_cur)){
     beta_cur_tmp = beta_prop;
+    accept_rec += 1;
   }
   return beta_cur_tmp;
 }
@@ -1377,6 +1379,7 @@ struct upd_betas_wls_struct_mm : public Worker
   const int &n_beta;
   const int &n_beta_re;
   const int &n_sample;
+  arma::ivec &accept_rec_vec;
 
   // updates accumulated so far
   arma::mat &upd_betas;
@@ -1392,16 +1395,18 @@ struct upd_betas_wls_struct_mm : public Worker
                           const int &n_beta,
                           const int &n_beta_re,
                           const int &n_sample,
+                          arma::ivec &accept_rec_vec,
                           arma::mat &upd_betas)
     : beta_cur(beta_cur), counts(counts), alpha_cur(alpha_cur), log_offset(log_offset), design_mat(design_mat),
       prior_sd_betas(prior_sd_betas), re_var(re_var), n_beta(n_beta), n_beta_re(n_beta_re),
-      n_sample(n_sample), upd_betas(upd_betas) {}
+      n_sample(n_sample), accept_rec_vec(accept_rec_vec), upd_betas(upd_betas) {}
 
   // process just the elements of the range I've been asked to
   void operator()(std::size_t begin, std::size_t end) {
     for(unsigned int i = begin; i < end; i++){
       upd_betas.row(i) = arma::trans(update_betas_wls_mm(beta_cur.row(i), counts.row(i), alpha_cur(i), log_offset,
-                                     design_mat, prior_sd_betas, re_var(i), n_beta,n_beta_re,  n_sample));
+                                     design_mat, prior_sd_betas, re_var(i), n_beta,n_beta_re, n_sample,
+                                     accept_rec_vec(i)));
     }
   }
 
@@ -1567,6 +1572,7 @@ arma::mat para_update_betas_wls_mm(const arma::mat &beta_cur,
                                    const int &n_beta,
                                    const int &n_beta_re,
                                    const int &n_sample,
+                                   arma::ivec &accept_rec_vec,
                                    const int &grain_size){
   arma::mat upd_betas(beta_cur.n_rows, beta_cur.n_cols);
 
@@ -1580,6 +1586,7 @@ arma::mat para_update_betas_wls_mm(const arma::mat &beta_cur,
                                          n_beta,
                                          n_beta_re,
                                          n_sample,
+                                         accept_rec_vec,
                                          upd_betas);
   parallelFor(0, counts.n_rows, upd_betas_inst, grain_size);
   return(upd_betas);
@@ -1755,6 +1762,8 @@ Rcpp::List nbmm_mcmc_sampler_wls(arma::mat counts,
   arma::vec beta_cur(n_beta_re), beta_prop(n_feature), mean_cur(n_sample), mean_prop(n_sample), mean_rho_cur(n_feature);
   double  a_rand_int_post, b_rand_int_post;
   double n_beta_start = starting_betas.n_cols;
+  arma::ivec accept_rec_vec(n_feature);
+  accept_rec_vec.zeros();
   betas.zeros();
   //betas.randn();
   betas.slice(0).cols(0, n_beta_start - 1) = starting_betas;
@@ -1767,7 +1776,7 @@ Rcpp::List nbmm_mcmc_sampler_wls(arma::mat counts,
   mean_rho_cur = prior_mean_log_rs;
 
   for(i = 1; i < n_it; i++){
-    betas.slice(i) = para_update_betas_wls_mm(betas.slice(i-1), counts, rhos.row(i-1).t(), log_offset, design_mat_tot, prior_sd_betas, sigma2.row(i-1), n_beta, n_beta_re, n_sample, grain_size);
+    betas.slice(i) = para_update_betas_wls_mm(betas.slice(i-1), counts, rhos.row(i-1).t(), log_offset, design_mat_tot, prior_sd_betas, sigma2.row(i-1), n_beta, n_beta_re, n_sample, accept_rec_vec, grain_size);
     betas_cur_mat = betas.slice(i).cols(n_beta, n_beta_tot - 1);
     rhos.row(i) = arma::trans(para_update_rhos(betas.slice(i), counts, rhos.row(i-1).t(), mean_rho_cur, log_offset, design_mat_tot, prior_sd_rs, rw_sd_rs, n_beta_tot, n_sample, grain_size));
 
@@ -1786,12 +1795,14 @@ Rcpp::List nbmm_mcmc_sampler_wls(arma::mat counts,
     arma::cube betas_sub = betas.tube(arma::span(), arma::span(0, n_beta + n_re_return - 1));
     return Rcpp::List::create(Rcpp::Named("betas_sample") = betas_sub,
                               Rcpp::Named("alphas_sample") = rhos,
-                              Rcpp::Named("sigma2_sample") = sigma2);
+                              Rcpp::Named("sigma2_sample") = sigma2,
+                              Rcpp::Named("accepts") = accept_rec_vec);
   }
   else{
     return Rcpp::List::create(Rcpp::Named("betas_sample") = betas,
                               Rcpp::Named("alphas_sample") = rhos,
-                              Rcpp::Named("sigma2_sample") = sigma2);
+                              Rcpp::Named("sigma2_sample") = sigma2,
+                              Rcpp::Named("accepts") = accept_rec_vec);
   }
 
 
@@ -1852,6 +1863,8 @@ Rcpp::List nbmm_mcmc_sampler_wls_gam(arma::mat counts,
   arma::vec beta_cur(n_beta_re), beta_prop(n_feature), mean_cur(n_sample), mean_prop(n_sample), mean_rho_cur(n_feature);
   double  a_rand_int_post, b_rand_int_post;
   double n_beta_start = starting_betas.n_cols;
+  arma::ivec accept_rec_vec(n_feature);
+  accept_rec_vec.zeros();
   betas.zeros();
   //betas.randn();
   betas.slice(0).cols(0, n_beta_start - 1) = starting_betas;
@@ -1859,13 +1872,14 @@ Rcpp::List nbmm_mcmc_sampler_wls_gam(arma::mat counts,
   rhos.row(0) = starting_disps.t();
   arma::mat design_mat_tot = arma::join_rows(design_mat, design_mat_re);
 
+
   sigma2.ones();
   //sigma2.row(0) += 9;
 
   //mean_rho_cur = prior_mean_log_rs;
 
   for(i = 1; i < n_it; i++){
-    betas.slice(i) = para_update_betas_wls_mm(betas.slice(i-1), counts, rhos.row(i-1).t(), log_offset, design_mat_tot, prior_sd_betas, sigma2.row(i-1), n_beta, n_beta_re, n_sample, grain_size);
+    betas.slice(i) = para_update_betas_wls_mm(betas.slice(i-1), counts, rhos.row(i-1).t(), log_offset, design_mat_tot, prior_sd_betas, sigma2.row(i-1), n_beta, n_beta_re, n_sample, accept_rec_vec, grain_size);
     betas_cur_mat = betas.slice(i).cols(n_beta, n_beta_tot - 1);
     //rhos.row(i) = arma::trans(para_update_rhos(betas.slice(i), counts, rhos.row(i-1).t(), mean_rho_cur, log_offset, design_mat_tot, prior_sd_rs, rw_sd_rs, n_beta_tot, n_sample, grain_size));
     rhos.row(i) = arma::trans(para_update_rhos_gam(betas.slice(i), counts, rhos.row(i-1).t(), log_offset, design_mat, prior_shape, prior_scale, rw_sd_rs, n_beta_tot, n_sample, grain_size));
@@ -1885,12 +1899,14 @@ Rcpp::List nbmm_mcmc_sampler_wls_gam(arma::mat counts,
     arma::cube betas_sub = betas.tube(arma::span(), arma::span(0, n_beta + n_re_return - 1));
     return Rcpp::List::create(Rcpp::Named("betas_sample") = betas_sub,
                               Rcpp::Named("alphas_sample") = rhos,
-                              Rcpp::Named("sigma2_sample") = sigma2);
+                              Rcpp::Named("sigma2_sample") = sigma2,
+                              Rcpp::Named("accepts") = accept_rec_vec);
   }
   else{
     return Rcpp::List::create(Rcpp::Named("betas_sample") = betas,
                               Rcpp::Named("alphas_sample") = rhos,
-                              Rcpp::Named("sigma2_sample") = sigma2);
+                              Rcpp::Named("sigma2_sample") = sigma2,
+                              Rcpp::Named("accepts") = accept_rec_vec);
   }
 
 
