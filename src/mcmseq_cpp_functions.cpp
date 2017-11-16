@@ -31,15 +31,17 @@ double dmvnrm_1f(const arma::vec &x,
   int xdim = x.n_cols;
   arma::mat rooti;
   arma::vec z;
-  double out;
+  double out, tmp;
+  double out_win;
   double rootisum, constants;
   constants = -(static_cast<double>(xdim)/2.0) * log2pi;
 
   rooti = arma::trans(arma::inv(trimatu(arma::chol(sigma))));
   rootisum = arma::sum(log(rooti.diag()));
   z = rooti * arma::trans(x.t() - mean.t()) ;
-  out = constants - 0.5 * arma::sum(z%z) + rootisum;
-  out = exp(out);
+  tmp = constants - 0.5 * arma::sum(z%z) + rootisum;
+  out_win = std::min(-300.0, tmp);
+  out = exp(out_win);
   return(out);
 }
 
