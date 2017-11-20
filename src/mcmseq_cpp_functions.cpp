@@ -41,7 +41,8 @@ double dmvnrm_1f(const arma::vec &x,
   z = rooti * arma::trans(x.t() - mean.t()) ;
   tmp = constants - 0.5 * arma::sum(z%z) + rootisum;
   out_win = std::max(-100.0, tmp);
-  out = exp(out_win);
+  //out = exp(out_win);
+  out = exp(tmp);
   return(out);
 }
 
