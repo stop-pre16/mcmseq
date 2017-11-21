@@ -943,7 +943,7 @@ arma::vec update_betas_wls_mm(const arma::rowvec &beta_cur,
                               int &accept_rec){
   arma::vec beta_prop(n_beta + n_beta_re), mean_cur(n_sample), mean_prop(n_sample), beta_cur_tmp = beta_cur.t();
   arma::vec y_tilde(n_sample), y_tilde_prop(n_sample), eta(n_sample), eta_prop(n_sample);
-  arma::vec mean_wls_cur(n_beta), mean_wls_prop(n_beta);
+  arma::vec mean_wls_cur(n_beta + n_beta_re), mean_wls_prop(n_beta + n_beta_re);
   arma::mat W_mat(n_sample, n_sample), R_mat(n_beta + n_beta_re, n_beta + n_beta_re);
   arma::mat W_mat_prop(n_sample, n_sample);
   arma::mat cov_mat_cur(n_beta + n_beta_re, n_beta + n_beta_re), cov_mat_prop(n_beta + n_beta_re, n_beta + n_beta_re);
@@ -952,6 +952,7 @@ arma::vec update_betas_wls_mm(const arma::rowvec &beta_cur,
   arma::vec prior_mean_betas(n_beta + n_beta_re), R_mat_diag(n_beta + n_beta_re);
 
   R_mat_diag.zeros();
+  // R_mat_diag.fill(prior_var_betas);
   R_mat_diag.rows(0, n_beta - 1) += prior_var_betas;
   R_mat_diag.rows(n_beta, n_beta + n_beta_re -1) += re_var;
   prior_mean_betas.zeros();
@@ -976,10 +977,12 @@ arma::vec update_betas_wls_mm(const arma::rowvec &beta_cur,
   cov_mat_cur = arma::inv(R_mat.i() + design_mat.t() * W_mat * design_mat);
   //Rcpp::Rcout << "cov_mat_cur = " << cov_mat_cur << std::endl;
   mean_wls_cur = cov_mat_cur * (design_mat.t() * W_mat * y_tilde);
-  //Rcpp::Rcout << "mean_wls_cur = " << mean_wls_cur << std::endl;
+  // Rcpp::Rcout << "mean_wls_cur = " << mean_wls_cur << std::endl;
+  // Rcpp::Rcout << "mean_wls_cur = " << mean_wls_cur.size() << std::endl;
 
   beta_prop = arma::trans(rmvnormal(1, mean_wls_cur, cov_mat_cur));
-  //Rcpp::Rcout << "beta_prop = " << beta_prop << std::endl;
+  // Rcpp::Rcout << "beta_prop = " << beta_prop << std::endl;
+  // Rcpp::Rcout << "beta_prop = " << beta_prop.size() << std::endl;
   eta_prop = design_mat * beta_prop + log_offset;
   //eta_prop = design_mat * beta_prop;
   //Rcpp::Rcout << "eta_prop = " << eta_prop << std::endl;
@@ -1014,10 +1017,18 @@ arma::vec update_betas_wls_mm(const arma::rowvec &beta_cur,
     log(dmvnrm_1f(beta_prop, prior_mean_betas, R_mat)) -
     log(dmvnrm_1f(beta_prop, mean_wls_cur, cov_mat_cur));
 
-  //Rcpp::Rcout << "mh_cur = " << mh_cur << std::endl;
-  //Rcpp::Rcout << "mh_prop = " << mh_prop << std::endl;
-  //Rcpp::Rcout << "mh_diff = " << mh_prop - mh_cur << std::endl;
-  //Rcpp::Rcout << "mh_accept_prob = " << exp(mh_prop - mh_cur) << std::endl;
+  // Rcpp::Rcout << "mh_cur = " << mh_cur << std::endl;
+  // Rcpp::Rcout << "ll_cur = " << ll_cur << std::endl;
+  // Rcpp::Rcout << "log(dmvnrm_1f(beta_cur_tmp, prior_mean_betas, R_mat)) = " << log(dmvnrm_1f(beta_cur_tmp, prior_mean_betas, R_mat)) << std::endl;
+  // Rcpp::Rcout << "-log(dmvnrm_1f(beta_cur_tmp, mean_wls_prop, cov_mat_prop)) = " << log(dmvnrm_1f(beta_cur_tmp, mean_wls_prop, cov_mat_prop)) << std::endl;
+  // Rcpp::Rcout << "mh_prop = " << mh_prop << std::endl;
+  // Rcpp::Rcout << "ll_prop = " << ll_prop << std::endl;
+  // Rcpp::Rcout << "log(dmvnrm_1f(beta_prop, prior_mean_betas, R_mat)) = " << log(dmvnrm_1f(beta_prop, prior_mean_betas, R_mat)) << std::endl;
+  // Rcpp::Rcout << "-log(dmvnrm_1f(beta_prop, mean_wls_cur, cov_mat_cur)) = " << log(dmvnrm_1f(beta_prop, mean_wls_cur, cov_mat_cur)) << std::endl;
+  // Rcpp::Rcout << "mh_diff = " << mh_prop - mh_cur << std::endl;
+  // Rcpp::Rcout << "mh_accept_prob = " << exp(mh_prop - mh_cur) << std::endl;
+  // Rcpp::Rcout << "cov_mat_cur = " << cov_mat_cur.diag().max() << std::endl;
+  // Rcpp::Rcout << "mh_accept_prob = " << exp(mh_prop - mh_cur) << std::endl;
 
   if(R::runif(0, 1) < exp(mh_prop - mh_cur)){
     beta_cur_tmp = beta_prop;
@@ -1779,6 +1790,7 @@ Rcpp::List nbmm_mcmc_sampler_wls(arma::mat counts,
   mean_rho_cur = prior_mean_log_rs;
 
   for(i = 1; i < n_it; i++){
+    // Rcpp::Rcout << "iteration "  << i << std::endl << std::endl;
     betas.slice(i) = para_update_betas_wls_mm(betas.slice(i-1), counts, rhos.row(i-1).t(), log_offset, design_mat_tot, prior_sd_betas, sigma2.row(i-1), n_beta, n_beta_re, n_sample, accept_rec_vec, grain_size);
     betas_cur_mat = betas.slice(i).cols(n_beta, n_beta_tot - 1);
     rhos.row(i) = arma::trans(para_update_rhos(betas.slice(i), counts, rhos.row(i-1).t(), mean_rho_cur, log_offset, design_mat_tot, prior_sd_rs, rw_sd_rs, n_beta_tot, n_sample, grain_size));
