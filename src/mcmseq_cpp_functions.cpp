@@ -226,7 +226,45 @@ double update_rho(const arma::rowvec &beta_cur,
   mh_cur = ll_cur + R::dnorm4(log(alpha_cur), mean_alpha_cur, prior_sd_rs, 1);
   mh_prop = ll_prop + R::dnorm4(log(alpha_prop), mean_alpha_cur, prior_sd_rs, 1);
 
+  //if((R::runif(0, 1) < exp(mh_prop - mh_cur)) && 1 < 0){
   if(R::runif(0, 1) < exp(mh_prop - mh_cur)){
+    return alpha_prop;
+  }
+  else{
+    return alpha_cur;
+  }
+}
+
+//    Function to update NB dispersion parameter for a single feature using
+//    a random walk proposal and log-normal prior (forced non-accepts for 50 it)
+
+double update_rho_force(const arma::rowvec &beta_cur,
+                        const arma::rowvec &counts,
+                        const double &alpha_cur,
+                        const double &mean_alpha_cur,
+                        const arma::vec &log_offset,
+                        const arma::mat &design_mat,
+                        const double &prior_sd_rs,
+                        const double &rw_sd_rs,
+                        const int &n_beta,
+                        const int &n_sample,
+                        const int &it_num){
+  arma::vec mean_cur(n_sample);
+  double ll_prop, ll_cur, mh_prop, mh_cur, rho_prop, rho_cur = 1.0 / alpha_cur, alpha_prop;
+
+  mean_cur = arma::exp(design_mat * beta_cur.t() + log_offset);
+
+  alpha_prop = exp(log(alpha_cur) + R::rnorm(0, rw_sd_rs));
+  rho_prop = 1.0 / alpha_prop;
+
+  ll_cur = arma::sum(arma::lgamma(rho_cur + counts)) - arma::sum((counts + rho_cur) * arma::log(1.0 + mean_cur * alpha_cur)) - n_sample * lgamma(rho_cur) + arma::sum(counts * log(alpha_cur));
+  ll_prop = arma::sum(arma::lgamma(rho_prop + counts)) - arma::sum((counts + rho_prop) * arma::log(1.0 + mean_cur * alpha_prop)) - n_sample * lgamma(rho_prop) + arma::sum(counts * log(alpha_prop));
+
+  mh_cur = ll_cur + R::dnorm4(log(alpha_cur), mean_alpha_cur, prior_sd_rs, 1);
+  mh_prop = ll_prop + R::dnorm4(log(alpha_prop), mean_alpha_cur, prior_sd_rs, 1);
+
+  if((R::runif(0, 1) < exp(mh_prop - mh_cur)) && it_num > 50){
+    // if(R::runif(0, 1) < exp(mh_prop - mh_cur)){
     return alpha_prop;
   }
   else{
@@ -420,6 +458,61 @@ struct upd_rhos_struct : public Worker
 
 };
 
+//  Structure for parallel updating of NB dispersions using random walk and log-normal prior
+
+struct upd_rhos_struct_force : public Worker
+{
+  // source objects
+  const arma::mat &beta_cur;
+  const arma::mat &counts;
+  const arma::vec &alpha_cur;
+  const arma::vec &mean_alpha_cur;
+  const arma::vec &log_offset;
+  const arma::mat &design_mat;
+  const double &prior_sd_rs;
+  const double &rw_sd_rs;
+  const int &n_beta;
+  const int &n_sample;
+  const int &it_num;
+
+  // updates accumulated so far
+  arma::vec &upd_rhos;
+
+  // constructors
+  upd_rhos_struct_force(const arma::mat &beta_cur,
+                        const arma::mat &counts,
+                        const arma::vec &alpha_cur,
+                        const arma::vec &mean_alpha_cur,
+                        const arma::vec &log_offset,
+                        const arma::mat &design_mat,
+                        const double &prior_sd_rs,
+                        const double &rw_sd_rs,
+                        const int &n_beta,
+                        const int &n_sample,
+                        const int &it_num,
+                        arma::vec &upd_rhos)
+    : beta_cur(beta_cur), counts(counts), alpha_cur(alpha_cur), mean_alpha_cur(mean_alpha_cur), log_offset(log_offset), design_mat(design_mat),
+      prior_sd_rs(prior_sd_rs), rw_sd_rs(rw_sd_rs), n_beta(n_beta), n_sample(n_sample), it_num(it_num), upd_rhos(upd_rhos) {}
+
+  // process just the elements of the range I've been asked to
+  void operator()(std::size_t begin, std::size_t end) {
+    for(unsigned int i = begin; i < end; i++){
+      upd_rhos(i) = update_rho_force(beta_cur.row(i),
+               counts.row(i),
+               alpha_cur(i),
+               mean_alpha_cur(i),
+               log_offset,
+               design_mat,
+               prior_sd_rs,
+               rw_sd_rs,
+               n_beta,
+               n_sample,
+               it_num);
+    }
+  }
+
+};
+
 //  Structure for parallel updating of NB dispersions using random walk and gamma prior
 
 struct upd_rhos_gam_struct : public Worker
@@ -560,6 +653,37 @@ arma::vec para_update_rhos(const arma::mat &beta_cur,
                                 rw_sd_rs,
                                 n_beta,
                                 n_sample,
+                                upd_rhos);
+  parallelFor(0, counts.n_rows, upd_rhos_inst, grain_size);
+  return(upd_rhos);
+}
+
+//  Parallel updating of NB dispersions using random walk proposal
+arma::vec para_update_rhos_force(const arma::mat &beta_cur,
+                                 const arma::mat &counts,
+                                 const arma::vec &alpha_cur,
+                                 const arma::vec &mean_alpha_cur,
+                                 const arma::vec &log_offset,
+                                 const arma::mat &design_mat,
+                                 const double &prior_sd_rs,
+                                 const double &rw_sd_rs,
+                                 const int &n_beta,
+                                 const int &n_sample,
+                                 const int &it_num,
+                                 const int &grain_size){
+  arma::vec upd_rhos(counts.n_rows);
+
+  upd_rhos_struct_force upd_rhos_inst(beta_cur,
+                                counts,
+                                alpha_cur,
+                                mean_alpha_cur,
+                                log_offset,
+                                design_mat,
+                                prior_sd_rs,
+                                rw_sd_rs,
+                                n_beta,
+                                n_sample,
+                                it_num,
                                 upd_rhos);
   parallelFor(0, counts.n_rows, upd_rhos_inst, grain_size);
   return(upd_rhos);
@@ -1082,18 +1206,20 @@ arma::vec update_betas_wls_mm_force(const arma::rowvec &beta_cur,
   W_mat.diag() = alpha_cur + arma::exp(-eta);
   //W_mat = arma::diagmat(alpha_cur + arma::exp(-eta));
   W_mat = W_mat.i();
+  //Rcpp::Rcout << "W_mat inv ok " << std::endl;
   //Rcpp::Rcout << "W_mat = " << W_mat << std::endl;
   R_mat.zeros();
   R_mat.diag() = R_mat_diag;
 
   cov_mat_cur = arma::inv(R_mat.i() + design_mat.t() * W_mat * design_mat);
+  //Rcpp::Rcout << "cov_mat_cur inv ok " << std::endl;
   //Rcpp::Rcout << "cov_mat_cur = " << cov_mat_cur << std::endl;
   mean_wls_cur = cov_mat_cur * (design_mat.t() * W_mat * y_tilde);
-  // Rcpp::Rcout << "mean_wls_cur = " << mean_wls_cur << std::endl;
+  //Rcpp::Rcout << "mean_wls_cur = " << mean_wls_cur << std::endl;
   // Rcpp::Rcout << "mean_wls_cur = " << mean_wls_cur.size() << std::endl;
 
   beta_prop = arma::trans(rmvnormal(1, mean_wls_cur, cov_mat_cur));
-  // Rcpp::Rcout << "beta_prop = " << beta_prop << std::endl;
+  //Rcpp::Rcout << "beta_prop = " << beta_prop << std::endl;
   // Rcpp::Rcout << "beta_prop = " << beta_prop.size() << std::endl;
   eta_prop = design_mat * beta_prop + log_offset;
   //eta_prop = design_mat * beta_prop;
@@ -1107,10 +1233,14 @@ arma::vec update_betas_wls_mm_force(const arma::rowvec &beta_cur,
 
   W_mat_prop.zeros();
   W_mat_prop.diag() = alpha_cur + arma::exp(-eta_prop);
+  //Rcpp::Rcout << "alpha_cur = " << alpha_cur << std::endl;
+  //Rcpp::Rcout << "W_mat_prop_diag = " << W_mat_prop.diag() << std::endl;
 
   W_mat_prop = W_mat_prop.i();
+  //Rcpp::Rcout << "W_mat_prop inv ok " << std::endl;
   //Rcpp::Rcout << "W_mat_prop = " << W_mat_prop << std::endl;
   cov_mat_prop = arma::inv(R_mat.i() + design_mat.t() * W_mat_prop * design_mat);
+  //Rcpp::Rcout << "cov_mat_prop inv ok " << std::endl;
   //Rcpp::Rcout << "cov_mat_prop = " << cov_mat_prop << std::endl;
   mean_wls_prop = cov_mat_prop * (design_mat.t() * W_mat_prop * y_tilde_prop);
   //Rcpp::Rcout << "mean_wls_prop = " << mean_wls_prop << std::endl;
@@ -2340,10 +2470,10 @@ Rcpp::List nbmm_mcmc_sampler_wls_force(arma::mat counts,
   mean_rho_cur = prior_mean_log_rs;
 
   for(i = 1; i < n_it; i++){
-    // Rcpp::Rcout << "iteration "  << i << std::endl << std::endl;
+    //Rcpp::Rcout << "iteration "  << i << std::endl << std::endl;
     betas.slice(i) = para_update_betas_wls_mm_force(betas.slice(i-1), counts, rhos.row(i-1).t(), log_offset, design_mat_tot, prior_sd_betas, sigma2.row(i-1), n_beta, n_beta_re, n_sample, accept_rec_vec, i, grain_size);
     betas_cur_mat = betas.slice(i).cols(n_beta, n_beta_tot - 1);
-    rhos.row(i) = arma::trans(para_update_rhos(betas.slice(i), counts, rhos.row(i-1).t(), mean_rho_cur, log_offset, design_mat_tot, prior_sd_rs, rw_sd_rs, n_beta_tot, n_sample, grain_size));
+    rhos.row(i) = arma::trans(para_update_rhos_force(betas.slice(i), counts, rhos.row(i-1).t(), mean_rho_cur, log_offset, design_mat_tot, prior_sd_rs, rw_sd_rs, n_beta_tot, n_sample, i, grain_size));
 
     //  Updating random intercept variance
     for(j = 0; j < n_feature; j++){
