@@ -292,3 +292,98 @@ nbmm_mcmc_sampler_wls_split_half <- function(counts, design_mat, design_mat_re, 
     .Call('_mcmseq_nbmm_mcmc_sampler_wls_split_half', PACKAGE = 'mcmseq', counts, design_mat, design_mat_re, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, return_all_re, n_re_return, grain_size)
 }
 
+#' Negative Binomial GLMM MCMC WLS Force (full parallel chians)
+#'
+#' Run an MCMC for the Negative Binomial mixed model (short description, one or two sentences)
+#'
+#' This is where you write details on the function...
+#'
+#' more details....
+#'
+#' @param counts a matrix of counts
+#' @param design_mat design matrix for mean response
+#' @param design_mat_re design matrix for random intercepts
+#' @param prior_sd_betas prior std. dev. for regression coefficients
+#' @param prior_sd_betas_a alpha in inverse gamma prior for random intercept variance
+#' @param prior_sd_betas_b beta in inverse gamma prior for random intercept variance
+#' @param prior_sd_rs prior std. dev for dispersion parameters
+#' @param prior_mean_log_rs vector of prior means for dispersion parameters
+#' @param n_it number of iterations to run MCMC
+#' @param rw_sd_rs random wal std. dev. for proposing dispersion values
+#' @param log_offset vector of offsets on log scale
+#' @param grain_size minimum size of parallel jobs, defaults to 1, can ignore for now
+#'
+#' @author Brian Vestal
+#'
+#' @return
+#' Returns a list with a cube of regression parameters, including random effects, a matrix of dispersion values, and a matrix of random intercept variances
+#'
+#' @export
+nbmm_mcmc_sampler_wls_force_fp <- function(counts, design_mat, design_mat_re, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, grain_size = 1L) {
+    .Call('_mcmseq_nbmm_mcmc_sampler_wls_force_fp', PACKAGE = 'mcmseq', counts, design_mat, design_mat_re, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, grain_size)
+}
+
+#' Negative Binomial GLMM MCMC Random Walk (full parallel chians)
+#'
+#' Run an MCMC for the Negative Binomial mixed model (short description, one or two sentences)
+#'
+#' This is where you write details on the function...
+#'
+#' more details....
+#'
+#' @param counts a matrix of counts
+#' @param design_mat design matrix for mean response
+#' @param design_mat_re design matrix for random intercepts
+#' @param prior_sd_betas prior std. dev. for regression coefficients
+#' @param rw_sd_betas random walk std. dev. for proposing beta values
+#' @param prior_sd_betas_a alpha in inverse gamma prior for random intercept variance
+#' @param prior_sd_betas_b beta in inverse gamma prior for random intercept variance
+#' @param prior_sd_rs prior std. dev for dispersion parameters
+#' @param prior_mean_log_rs vector of prior means for dispersion parameters
+#' @param n_it number of iterations to run MCMC
+#' @param rw_sd_rs random walk std. dev. for proposing dispersion values
+#' @param log_offset vector of offsets on log scale
+#' @param grain_size minimum size of parallel jobs, defaults to 1, can ignore for now
+#'
+#' @author Brian Vestal
+#'
+#' @return
+#' Returns a list with a cube of regression parameters, including random effects, a matrix of dispersion values, and a matrix of random intercept variances
+#'
+#' @export
+nbmm_mcmc_sampler_rw <- function(counts, design_mat, design_mat_re, prior_sd_betas, rw_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, grain_size = 1L) {
+    .Call('_mcmseq_nbmm_mcmc_sampler_rw', PACKAGE = 'mcmseq', counts, design_mat, design_mat_re, prior_sd_betas, rw_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, grain_size)
+}
+
+#' Negative Binomial GLMM MCMC WLS Force Hybrid (full parallel chians)
+#'
+#' Run an MCMC for the Negative Binomial mixed model (short description, one or two sentences)
+#'
+#' This is where you write details on the function...
+#'
+#' more details....
+#'
+#' @param counts a matrix of counts
+#' @param design_mat design matrix for mean response
+#' @param design_mat_re design matrix for random intercepts
+#' @param prior_sd_betas prior std. dev. for regression coefficients
+#' @param rw_sd_betas random walk std. dev. for regression coefficients
+#' @param prior_sd_betas_a alpha in inverse gamma prior for random intercept variance
+#' @param prior_sd_betas_b beta in inverse gamma prior for random intercept variance
+#' @param prior_sd_rs prior std. dev for dispersion parameters
+#' @param prior_mean_log_rs vector of prior means for dispersion parameters
+#' @param n_it number of iterations to run MCMC
+#' @param rw_sd_rs random wal std. dev. for proposing dispersion values
+#' @param log_offset vector of offsets on log scale
+#' @param grain_size minimum size of parallel jobs, defaults to 1, can ignore for now
+#'
+#' @author Brian Vestal
+#'
+#' @return
+#' Returns a list with a cube of regression parameters, including random effects, a matrix of dispersion values, and a matrix of random intercept variances
+#'
+#' @export
+nbmm_mcmc_sampler_wls_hybrid <- function(counts, design_mat, design_mat_re, prior_sd_betas, rw_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, grain_size = 1L) {
+    .Call('_mcmseq_nbmm_mcmc_sampler_wls_hybrid', PACKAGE = 'mcmseq', counts, design_mat, design_mat_re, prior_sd_betas, rw_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, grain_size)
+}
+
