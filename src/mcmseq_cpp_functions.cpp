@@ -2,7 +2,7 @@
  * Single File that has all NBGLM and NBGLMM MCMC fitting functions and
  * all other helper functions
  */
-//#define ARMA_DONT_PRINT_ERRORS
+#define ARMA_DONT_PRINT_ERRORS
 // Header info and Rcpp plugins and depends statements
 #include <iostream>
 #include <RcppArmadillo.h>
