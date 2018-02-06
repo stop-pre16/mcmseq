@@ -246,6 +246,220 @@ arma::vec update_betas_wls(const arma::rowvec &beta_cur,
   return beta_cur_tmp;
 }
 
+//    Function to update all regression parameters for a single feature using a
+//    Wieghted Least Squares (WLS) proposal
+
+// W_mat.zeros();
+// W_mat.diag() = alpha_cur + arma::exp(-eta);
+// arma::mat W_mat_i;
+// success = false;
+// while(success == false)
+// {
+//   success = arma::inv(W_mat_i, W_mat);
+//
+//   if(success == false)
+//   {
+//     inv_errors++;
+//     return(beta_cur_tmp);
+//   }
+// }
+// //W_mat = arma::diagmat(alpha_cur + arma::exp(-eta));
+// //W_mat = W_mat.i();
+// //Rcpp::Rcout << "W_mat inv ok " << std::endl;
+// //Rcpp::Rcout << "W_mat = " << W_mat << std::endl;
+// R_mat.zeros();
+// R_mat.diag() = R_mat_diag;
+// // Rcpp::Rcout << "line 1274 check" << std::endl;
+// arma::mat csigma = R_mat.i() + design_mat.t() * W_mat_i * design_mat;
+//
+// success = false;
+// while(success == false)
+// {
+//   success = arma::inv(cov_mat_cur, csigma);
+//
+//   if(success == false)
+//   {
+//     inv_errors++;
+//     return(beta_cur_tmp);
+//   }
+// }
+//
+// //cov_mat_cur = arma::inv(R_mat.i() + design_mat.t() * W_mat * design_mat);
+// //Rcpp::Rcout << "cov_mat_cur inv ok " << std::endl;
+// //Rcpp::Rcout << "cov_mat_cur = " << cov_mat_cur << std::endl;
+// // Rcpp::Rcout << "line 1292 check" << std::endl;
+// mean_wls_cur = cov_mat_cur * (design_mat.t() * W_mat_i * y_tilde);
+// //Rcpp::Rcout << "mean_wls_cur = " << mean_wls_cur << std::endl;
+// // Rcpp::Rcout << "mean_wls_cur = " << mean_wls_cur.size() << std::endl;
+//
+// beta_prop = arma::trans(rmvnormal(1, mean_wls_cur, cov_mat_cur));
+// //Rcpp::Rcout << "beta_prop = " << beta_prop << std::endl;
+// // Rcpp::Rcout << "beta_prop = " << beta_prop.size() << std::endl;
+// // Rcpp::Rcout << "line 1300 check" << std::endl;
+// eta_prop = design_mat * beta_prop + log_offset;
+// //eta_prop = design_mat * beta_prop;
+// //Rcpp::Rcout << "eta_prop = " << eta_prop << std::endl;
+// mean_prop = arma::exp(eta_prop);
+// //Rcpp::Rcout << "mean_prop = " << mean_prop << std::endl;
+//
+// //y_tilde_prop = eta_prop + arma::trans(counts - mean_prop.t()) % arma::exp(-eta_prop);
+// y_tilde_prop = eta_prop + arma::trans(counts - mean_prop.t()) % arma::exp(-eta_prop) - log_offset;
+// //Rcpp::Rcout << "y_tilde_prop = " << y_tilde_prop << std::endl;
+//
+// W_mat_prop.zeros();
+// W_mat_prop.diag() = alpha_cur + arma::exp(-eta_prop);
+// //Rcpp::Rcout << "alpha_cur = " << alpha_cur << std::endl;
+// //Rcpp::Rcout << "W_mat_prop_diag = " << W_mat_prop.diag() << std::endl;
+// arma::mat W_mat_prop_i;
+// success = false;
+// while(success == false)
+// {
+//   success = arma::inv(W_mat_prop_i, W_mat_prop);
+//
+//   if(success == false)
+//   {
+//     inv_errors++;
+//     return(beta_cur_tmp);
+//   }
+// }
+//
+// //W_mat_prop = W_mat_prop.i();
+// //Rcpp::Rcout << "W_mat_prop inv ok " << std::endl;
+// //Rcpp::Rcout << "W_mat_prop = " << W_mat_prop << std::endl;
+// // Rcpp::Rcout << "line 1331 check" << std::endl;
+// csigma = R_mat.i() + design_mat.t() * W_mat_prop_i * design_mat;
+// success = false;
+//
+// while(success == false)
+// {
+//   success = arma::inv(cov_mat_prop, csigma);
+//
+//   if(success == false)
+//   {
+//     inv_errors++;
+//     return(beta_cur_tmp);
+//   }
+// }
+
+arma::vec update_betas_wls_safe(const arma::rowvec &beta_cur,
+                           const arma::rowvec &counts,
+                           const double &alpha_cur,
+                           const arma::vec &log_offset,
+                           const arma::mat &design_mat,
+                           const double &prior_sd_betas,
+                           const int &n_beta,
+                           const int &n_sample,
+                           const arma::vec &R_mat_diag,
+                           int &accept_rec,
+                           int &inv_errors){
+  arma::vec beta_prop(n_beta), mean_cur(n_sample), mean_prop(n_sample), beta_cur_tmp = beta_cur.t();
+  arma::vec y_tilde(n_sample), y_tilde_prop(n_sample), eta(n_sample), eta_prop(n_sample);
+  arma::vec mean_wls_cur(n_beta), mean_wls_prop(n_beta);
+  arma::mat W_mat(n_sample, n_sample), R_mat(n_beta, n_beta);
+  arma::mat W_mat_prop(n_sample, n_sample);
+  arma::mat cov_mat_cur(n_beta, n_beta), cov_mat_prop(n_beta, n_beta);
+  double ll_prop, ll_cur, mh_prop, mh_cur, rho_cur = 1.0 / alpha_cur;
+  arma::vec prior_mean_betas(n_beta);
+  prior_mean_betas.zeros();
+  bool success = false;
+
+  eta = design_mat * beta_cur_tmp + log_offset;
+  mean_cur = arma::exp(eta);
+
+  y_tilde = eta + arma::trans(counts - mean_cur.t()) % arma::exp(-eta) - log_offset;
+
+  W_mat.zeros();
+  W_mat.diag() = alpha_cur + arma::exp(-eta);
+  W_mat = arma::diagmat(alpha_cur + arma::exp(-eta));
+  arma::mat W_mat_i;
+  success = false;
+  while(success == false)
+  {
+    success = arma::inv(W_mat_i, W_mat);
+
+    if(success == false)
+    {
+      inv_errors++;
+      return(beta_cur_tmp);
+    }
+  }
+
+  R_mat.zeros();
+  R_mat.diag() = R_mat_diag;
+  arma::mat csigma = R_mat.i() + design_mat.t() * W_mat_i * design_mat;
+
+  success = false;
+  while(success == false)
+  {
+    success = arma::inv(cov_mat_cur, csigma);
+
+    if(success == false)
+    {
+      inv_errors++;
+      return(beta_cur_tmp);
+    }
+  }
+  //cov_mat_cur = arma::inv(R_mat.i() + design_mat.t() * W_mat_i * design_mat);
+
+  mean_wls_cur = cov_mat_cur * (design_mat.t() * W_mat_i * y_tilde);
+
+
+  beta_prop = arma::trans(rmvnormal(1, mean_wls_cur, cov_mat_cur));
+  eta_prop = design_mat * beta_prop + log_offset;
+  mean_prop = arma::exp(eta_prop);
+
+  y_tilde_prop = eta_prop + arma::trans(counts - mean_prop.t()) % arma::exp(-eta_prop) - log_offset;
+
+  W_mat_prop.zeros();
+  W_mat_prop.diag() = alpha_cur + arma::exp(-eta_prop);
+  arma::mat W_mat_prop_i;
+  success = false;
+  while(success == false)
+  {
+    success = arma::inv(W_mat_prop_i, W_mat_prop);
+
+    if(success == false)
+    {
+      inv_errors++;
+      return(beta_cur_tmp);
+    }
+  }
+  //W_mat_prop = W_mat_prop.i();
+
+  //cov_mat_prop = arma::inv(R_mat.i() + design_mat.t() * W_mat_prop * design_mat);
+  csigma = R_mat.i() + design_mat.t() * W_mat_prop_i * design_mat;
+  success = false;
+
+  while(success == false)
+  {
+    success = arma::inv(cov_mat_prop, csigma);
+
+    if(success == false)
+    {
+      inv_errors++;
+      return(beta_cur_tmp);
+    }
+  }
+  mean_wls_prop = cov_mat_prop * (design_mat.t() * W_mat_prop_i * y_tilde_prop);
+
+  ll_cur = arma::sum(counts * arma::log(mean_cur) - (counts + rho_cur) * arma::log(1.0 + mean_cur * alpha_cur));
+  ll_prop = arma::sum(counts * arma::log(mean_prop) - (counts + rho_cur) * arma::log(1.0 + mean_prop * alpha_cur));
+
+  mh_cur = ll_cur +
+    log(dmvnrm_1f(beta_cur_tmp, prior_mean_betas, R_mat)) -
+    log(dmvnrm_1f(beta_cur_tmp, mean_wls_prop, cov_mat_prop));
+
+  mh_prop = ll_prop +
+    log(dmvnrm_1f(beta_prop, prior_mean_betas, R_mat)) -
+    log(dmvnrm_1f(beta_prop, mean_wls_cur, cov_mat_cur));
+
+  if(R::runif(0, 1) < exp(mh_prop - mh_cur)){
+    beta_cur_tmp = beta_prop;
+    accept_rec += 1;
+  }
+  return beta_cur_tmp;
+}
+
 //    Function to update NB dispersion parameter for a single feature using
 //    a random walk proposal and log-normal prior
 
@@ -4665,8 +4879,8 @@ arma::mat whole_chain_nbglm2(const arma::rowvec &counts,
                                          const double &n_beta,
                                          const double &n_sample,
                                          const int n_it){
-  int i, accepts = 0;
-  arma::mat ret(n_it, n_beta + 2, arma::fill::zeros);
+  int i = 1, accepts = 0, inv_errors = 0;
+  arma::mat ret(n_it, n_beta + 3, arma::fill::zeros);
   arma::mat betas_sample(n_it, n_beta);
   arma::rowvec betas_cur(n_beta), betas_last(n_beta);
   arma::vec disp_sample(n_it);
@@ -4680,8 +4894,8 @@ arma::mat whole_chain_nbglm2(const arma::rowvec &counts,
   betas_cur = starting_betas;
   betas_last = starting_betas;
 
-  for(i = 1; i < n_it; i++){
-    betas_cur = arma::trans(update_betas_wls(betas_last,
+  while(i < n_it && inv_errors < 1){
+    betas_cur = arma::trans(update_betas_wls_safe(betas_last,
                                              counts,
                                              disp_sample(i-1),
                                              log_offset,
@@ -4690,7 +4904,8 @@ arma::mat whole_chain_nbglm2(const arma::rowvec &counts,
                                              n_beta,
                                              n_sample,
                                              R_mat_diag,
-                                             accepts));
+                                             accepts,
+                                             inv_errors));
     betas_last = betas_cur;
     betas_sample.row(i) = betas_cur;
 
@@ -4704,10 +4919,17 @@ arma::mat whole_chain_nbglm2(const arma::rowvec &counts,
                 rw_sd_rs,
                 n_beta,
                 n_sample);
+    i++;
+  }
+  if(inv_errors > 0){
+    betas_sample.fill(NA_REAL);
+    disp_sample.fill(NA_REAL);
+    accepts = -1;
   }
   ret.cols(0, n_beta - 1) = betas_sample;
   ret.col(n_beta) = disp_sample;
   ret(0, n_beta+1) = accepts;
+  ret(0, n_beta+2) = inv_errors;
   return(ret);
 }
 
@@ -4776,7 +4998,7 @@ arma::cube mcmc_chain_glm_par2(const arma::mat &counts,
                                            const int &n_beta,
                                            const int &n_sample,
                                            const int &n_it){
-  arma::cube upd_param(n_it, n_beta + 2, counts.n_rows);
+  arma::cube upd_param(n_it, n_beta + 3, counts.n_rows, arma::fill::zeros);
 
   whole_feature_sample_struct_glm2 mcmc_inst(counts,
                                             log_offset,
@@ -4812,6 +5034,7 @@ arma::cube mcmc_chain_glm_par2(const arma::mat &counts,
 //' @param rw_sd_rs random wal std. dev. for proposing dispersion values
 //' @param log_offset vector of offsets on log scale
 //' @param grain_size minimum size of parallel jobs, defaults to 1, can ignore for now
+//' @param return_summary return only a summary (point estimates and p-values where appropriate)
 //'
 //' @author Brian Vestal
 //'
@@ -4830,26 +5053,17 @@ Rcpp::List nbglm_mcmc_fp2(arma::mat counts,
                          double rw_sd_rs,
                          arma::vec log_offset,
                          arma::mat starting_betas,
-                         int grain_size = 1){
+                         int grain_size = 1,
+                         bool return_summary = true,
+                         double burn_in_prop = .1){
 
   arma::cube ret;
-  int n_beta = design_mat.n_cols, n_sample = counts.n_cols;
+  int n_beta = design_mat.n_cols, n_sample = counts.n_cols, n_gene = counts.n_rows;
   int n_beta_start = starting_betas.n_cols;
   arma::mat starting_betas2(counts.n_rows, n_beta);
   starting_betas2.zeros();
   starting_betas2.cols(0, n_beta_start - 1) = starting_betas;
 
-  // arma::field<arma::cube> mcmc_chain_glm_par(const arma::mat &counts,
-  //                                            const arma::vec &log_offset,
-  //                                            const arma::mat &starting_betas,
-  //                                            const arma::mat &design_mat,
-  //                                            const arma::vec &mean_rhos,
-  //                                            const double &prior_sd_rs,
-  //                                            const double &rw_sd_rs,
-  //                                            const double &prior_sd_betas,
-  //                                            const int &n_beta,
-  //                                            const int &n_sample,
-  //                                            const int &n_it){
   ret = mcmc_chain_glm_par2(counts,
                            log_offset,
                            starting_betas2,
@@ -4865,15 +5079,53 @@ Rcpp::List nbglm_mcmc_fp2(arma::mat counts,
 
   arma::cube betas_ret;
   arma::mat disp_ret;
-  arma::vec accepts_ret;
+  arma::vec accepts_ret, inv_errors_ret;
 
   betas_ret = ret.tube(arma::span(), arma::span(0, n_beta-1));
   disp_ret = ret.tube(arma::span(), arma::span(n_beta, n_beta));
   accepts_ret = ret.tube(0, n_beta+1);
+  inv_errors_ret = ret.tube(0, n_beta+2);
+  arma::uvec idx_na = arma::find(inv_errors_ret > 0);
+  int n_na = idx_na.n_elem;
+  if(n_na > 0){
+    accepts_ret.elem(idx_na).fill(NA_REAL);
+  }
 
-  return Rcpp::List::create(Rcpp::Named("betas_sample") = betas_ret,
-                            Rcpp::Named("alphas_sample") = disp_ret,
-                            Rcpp::Named("accepts") = accepts_ret);
+  if(return_summary == false){
+    return Rcpp::List::create(Rcpp::Named("betas_sample") = betas_ret,
+                              Rcpp::Named("alphas_sample") = disp_ret,
+                              Rcpp::Named("accepts") = accepts_ret,
+                              Rcpp::Named("inv_errors") = inv_errors_ret);
+  }
+  else{
+    int i, j, n_burn_in = round(n_it * burn_in_prop);
+    arma::mat beta_coef(n_gene, n_beta);
+    beta_coef.fill(NA_REAL);
+    arma::mat p_val_mat(n_gene, n_beta);
+    p_val_mat.fill(NA_REAL);
+    arma::vec beta_coef_tmp, disp_est(n_gene);
+    disp_est.fill(NA_REAL);
+    arma::uvec idx_ops, idx_fail;
+    double n_it_double = n_it;
+    for(i = 0; i < n_gene; i++){
+      idx_fail = arma::find(idx_na == i);
+      if(idx_fail.n_elem < 1){
+        for(j = 0; j < n_beta; j++){
+          beta_coef_tmp = betas_ret.slice(i).col(j).rows(n_burn_in, n_it - 1);
+          beta_coef(i, j) = arma::median(beta_coef_tmp);
+          idx_ops = arma::find((beta_coef_tmp * beta_coef(i, j)) < 0);
+          p_val_mat(i, j) = (2.0 * idx_ops.n_elem) / (n_it_double - n_burn_in);
+        }
+        disp_est(i) = arma::median(disp_ret.col(i).rows(n_burn_in, n_it - 1));
+      }
+    }
+    return Rcpp::List::create(Rcpp::Named("betas_est") = beta_coef,
+                              Rcpp::Named("p_vals") = p_val_mat,
+                              Rcpp::Named("alphas_est") = disp_est,
+                              Rcpp::Named("accepts") = accepts_ret,
+                              Rcpp::Named("inv_errors") = inv_errors_ret);
+  }
+
 }
 
 ///////////////////////////////////////////////////////////////////////////

@@ -6,7 +6,7 @@
 \usage{
 nbglm_mcmc_fp2(counts, design_mat, prior_sd_betas, prior_sd_rs,
   prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas,
-  grain_size = 1L)
+  grain_size = 1L, return_summary = TRUE)
 }
 \arguments{
 \item{counts}{a matrix of counts}
@@ -26,6 +26,8 @@ nbglm_mcmc_fp2(counts, design_mat, prior_sd_betas, prior_sd_rs,
 \item{log_offset}{vector of offsets on log scale}
 
 \item{grain_size}{minimum size of parallel jobs, defaults to 1, can ignore for now}
+
+\item{return_summary}{return only a summary (point estimates and p-values where appropriate)}
 }
 \value{
 Returns a list with a cube of regression parameters, and a matrix of dispersion values
