@@ -377,6 +377,48 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// nbll_beta
+double nbll_beta(arma::vec counts, arma::vec betas, double alpha, arma::mat design_mat);
+RcppExport SEXP _mcmseq_nbll_beta(SEXP countsSEXP, SEXP betasSEXP, SEXP alphaSEXP, SEXP design_matSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::vec >::type counts(countsSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type betas(betasSEXP);
+    Rcpp::traits::input_parameter< double >::type alpha(alphaSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type design_mat(design_matSEXP);
+    rcpp_result_gen = Rcpp::wrap(nbll_beta(counts, betas, alpha, design_mat));
+    return rcpp_result_gen;
+END_RCPP
+}
+// nbll_alpha
+double nbll_alpha(arma::vec counts, arma::vec betas, double alpha, arma::mat design_mat);
+RcppExport SEXP _mcmseq_nbll_alpha(SEXP countsSEXP, SEXP betasSEXP, SEXP alphaSEXP, SEXP design_matSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::vec >::type counts(countsSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type betas(betasSEXP);
+    Rcpp::traits::input_parameter< double >::type alpha(alphaSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type design_mat(design_matSEXP);
+    rcpp_result_gen = Rcpp::wrap(nbll_alpha(counts, betas, alpha, design_mat));
+    return rcpp_result_gen;
+END_RCPP
+}
+// nbll_alpha_old
+double nbll_alpha_old(arma::rowvec counts, arma::vec betas, double alpha, arma::mat design_mat);
+RcppExport SEXP _mcmseq_nbll_alpha_old(SEXP countsSEXP, SEXP betasSEXP, SEXP alphaSEXP, SEXP design_matSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::rowvec >::type counts(countsSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type betas(betasSEXP);
+    Rcpp::traits::input_parameter< double >::type alpha(alphaSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type design_mat(design_matSEXP);
+    rcpp_result_gen = Rcpp::wrap(nbll_alpha_old(counts, betas, alpha, design_mat));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_mcmseq_nbglm_mcmc_fp", (DL_FUNC) &_mcmseq_nbglm_mcmc_fp, 10},
@@ -395,6 +437,9 @@ static const R_CallMethodDef CallEntries[] = {
     {"_mcmseq_nbmm_mcmc_sampler_wls_force_fp2", (DL_FUNC) &_mcmseq_nbmm_mcmc_sampler_wls_force_fp2, 13},
     {"_mcmseq_nbglm_mcmc_fp2", (DL_FUNC) &_mcmseq_nbglm_mcmc_fp2, 12},
     {"_mcmseq_nbmm_mcmc_sampler_rw2", (DL_FUNC) &_mcmseq_nbmm_mcmc_sampler_rw2, 14},
+    {"_mcmseq_nbll_beta", (DL_FUNC) &_mcmseq_nbll_beta, 4},
+    {"_mcmseq_nbll_alpha", (DL_FUNC) &_mcmseq_nbll_alpha, 4},
+    {"_mcmseq_nbll_alpha_old", (DL_FUNC) &_mcmseq_nbll_alpha_old, 4},
     {NULL, NULL, 0}
 };
 

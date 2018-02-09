@@ -507,3 +507,72 @@ nbmm_mcmc_sampler_rw2 <- function(counts, design_mat, design_mat_re, prior_sd_be
     .Call('_mcmseq_nbmm_mcmc_sampler_rw2', PACKAGE = 'mcmseq', counts, design_mat, design_mat_re, prior_sd_betas, rw_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, grain_size)
 }
 
+#' Negative Binomial log-liklihood (reduced for betas)
+#'
+#' Run an MCMC for the Negative Binomial mixed model (short description, one or two sentences)
+#'
+#' This is where you write details on the function...
+#'
+#' more details....
+#'
+#' @param counts a vector of counts
+#' @param betas a vector of regression coef
+#' @param alpha multiplicative dispersion value
+#' @param design_mat design matrix for mean response
+#'
+#' @author Brian Vestal
+#'
+#' @return
+#' Returns a list with a cube of regression parameters, including random effects, a matrix of dispersion values, and a matrix of random intercept variances
+#'
+#' @export
+nbll_beta <- function(counts, betas, alpha, design_mat) {
+    .Call('_mcmseq_nbll_beta', PACKAGE = 'mcmseq', counts, betas, alpha, design_mat)
+}
+
+#' Negative Binomial log-liklihood (reduced for dispersion)
+#'
+#' Run an MCMC for the Negative Binomial mixed model (short description, one or two sentences)
+#'
+#' This is where you write details on the function...
+#'
+#' more details....
+#'
+#' @param counts a vector of counts
+#' @param betas a vector of regression coef
+#' @param alpha multiplicative dispersion value
+#' @param design_mat design matrix for mean response
+#'
+#' @author Brian Vestal
+#'
+#' @return
+#' Returns a list with a cube of regression parameters, including random effects, a matrix of dispersion values, and a matrix of random intercept variances
+#'
+#' @export
+nbll_alpha <- function(counts, betas, alpha, design_mat) {
+    .Call('_mcmseq_nbll_alpha', PACKAGE = 'mcmseq', counts, betas, alpha, design_mat)
+}
+
+#' Negative Binomial log-liklihood (reduced for dispersion)
+#'
+#' Run an MCMC for the Negative Binomial mixed model (short description, one or two sentences)
+#'
+#' This is where you write details on the function...
+#'
+#' more details....
+#'
+#' @param counts a vector of counts
+#' @param betas a vector of regression coef
+#' @param alpha multiplicative dispersion value
+#' @param design_mat design matrix for mean response
+#'
+#' @author Brian Vestal
+#'
+#' @return
+#' Returns a list with a cube of regression parameters, including random effects, a matrix of dispersion values, and a matrix of random intercept variances
+#'
+#' @export
+nbll_alpha_old <- function(counts, betas, alpha, design_mat) {
+    .Call('_mcmseq_nbll_alpha_old', PACKAGE = 'mcmseq', counts, betas, alpha, design_mat)
+}
+
