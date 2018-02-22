@@ -576,3 +576,33 @@ nbll_alpha_old <- function(counts, betas, alpha, design_mat) {
     .Call('_mcmseq_nbll_alpha_old', PACKAGE = 'mcmseq', counts, betas, alpha, design_mat)
 }
 
+#' Single feature GLM chain using MALA proposal
+#'
+#' Run an MCMC for the Negative Binomial mixed model (short description, one or two sentences)
+#'
+#' This is where you write details on the function...
+#'
+#' more details....
+#'
+#' @param counts a vector of counts
+#' @param log_offset vector of offsets on log scale
+#' @param starting_betas vector of starting values for betas
+#' @param design_mat design matrix for mean response
+#' @param prior_sd_betas prior std. dev. for regression coefficients
+#' @param prior_sd_rs prior std. dev for dispersion parameters
+#' @param mean_rho prior mean for dispersion parameter
+#' @param rw_sd_rs random walk std. dev. for proposing dispersion values
+#' @param n_sample random walk std. dev. for proposing dispersion values
+#' @param n_beta random walk std. dev. for proposing dispersion values
+#' @param n_it random walk std. dev. for proposing dispersion values
+#' @param h_step random walk std. dev. for proposing dispersion values
+#' @author Brian Vestal
+#'
+#' @return
+#' Returns a list with a cube of regression parameters, including random effects, a matrix of dispersion values, and a matrix of random intercept variances
+#'
+#' @export
+whole_chain_nbglm_mala <- function(counts, log_offset, starting_betas, design_mat, mean_rho, prior_sd_betas, prior_sd_rs, rw_sd_rs, n_beta, n_sample, n_it, h_step) {
+    .Call('_mcmseq_whole_chain_nbglm_mala', PACKAGE = 'mcmseq', counts, log_offset, starting_betas, design_mat, mean_rho, prior_sd_betas, prior_sd_rs, rw_sd_rs, n_beta, n_sample, n_it, h_step)
+}
+

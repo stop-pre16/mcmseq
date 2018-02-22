@@ -420,6 +420,28 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// whole_chain_nbglm_mala
+arma::mat whole_chain_nbglm_mala(const arma::rowvec& counts, const arma::vec& log_offset, const arma::rowvec& starting_betas, const arma::mat& design_mat, const double& mean_rho, const double& prior_sd_betas, const double& prior_sd_rs, const double& rw_sd_rs, const double& n_beta, const double& n_sample, const int& n_it, const double& h_step);
+RcppExport SEXP _mcmseq_whole_chain_nbglm_mala(SEXP countsSEXP, SEXP log_offsetSEXP, SEXP starting_betasSEXP, SEXP design_matSEXP, SEXP mean_rhoSEXP, SEXP prior_sd_betasSEXP, SEXP prior_sd_rsSEXP, SEXP rw_sd_rsSEXP, SEXP n_betaSEXP, SEXP n_sampleSEXP, SEXP n_itSEXP, SEXP h_stepSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::rowvec& >::type counts(countsSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type log_offset(log_offsetSEXP);
+    Rcpp::traits::input_parameter< const arma::rowvec& >::type starting_betas(starting_betasSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type design_mat(design_matSEXP);
+    Rcpp::traits::input_parameter< const double& >::type mean_rho(mean_rhoSEXP);
+    Rcpp::traits::input_parameter< const double& >::type prior_sd_betas(prior_sd_betasSEXP);
+    Rcpp::traits::input_parameter< const double& >::type prior_sd_rs(prior_sd_rsSEXP);
+    Rcpp::traits::input_parameter< const double& >::type rw_sd_rs(rw_sd_rsSEXP);
+    Rcpp::traits::input_parameter< const double& >::type n_beta(n_betaSEXP);
+    Rcpp::traits::input_parameter< const double& >::type n_sample(n_sampleSEXP);
+    Rcpp::traits::input_parameter< const int& >::type n_it(n_itSEXP);
+    Rcpp::traits::input_parameter< const double& >::type h_step(h_stepSEXP);
+    rcpp_result_gen = Rcpp::wrap(whole_chain_nbglm_mala(counts, log_offset, starting_betas, design_mat, mean_rho, prior_sd_betas, prior_sd_rs, rw_sd_rs, n_beta, n_sample, n_it, h_step));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_mcmseq_nbglm_mcmc_fp", (DL_FUNC) &_mcmseq_nbglm_mcmc_fp, 10},
@@ -441,6 +463,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_mcmseq_nbll_beta", (DL_FUNC) &_mcmseq_nbll_beta, 4},
     {"_mcmseq_nbll_alpha", (DL_FUNC) &_mcmseq_nbll_alpha, 4},
     {"_mcmseq_nbll_alpha_old", (DL_FUNC) &_mcmseq_nbll_alpha_old, 4},
+    {"_mcmseq_whole_chain_nbglm_mala", (DL_FUNC) &_mcmseq_whole_chain_nbglm_mala, 12},
     {NULL, NULL, 0}
 };
 

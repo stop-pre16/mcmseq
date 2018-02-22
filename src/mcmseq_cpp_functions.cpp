@@ -5339,3 +5339,198 @@ double nbll_alpha_old(arma::rowvec counts,
 }
 
 //arma::sum(arma::lgamma(rho_cur + counts)) - arma::sum((counts + rho_cur) * arma::log(1.0 + mean_cur * alpha_cur)) - n_sample * lgamma(rho_cur) + arma::sum(counts * log(alpha_cur));
+
+
+////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////
+/////////////////////////   MALA updating scheme   /////////////////////////
+////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////
+
+arma::vec update_betas_mala(const arma::rowvec &beta_cur,
+                                const arma::rowvec &counts,
+                                const double &alpha_cur,
+                                const arma::vec &log_offset,
+                                const arma::mat &design_mat,
+                                const double &prior_sd_betas,
+                                const int &n_beta,
+                                const int &n_sample,
+                                int &accept_rec,
+                                const double &h_step,
+                                const arma::mat &R_mat,
+                                const arma::mat &R_mat_i,
+                                const arma::mat &D_mat,
+                                const arma::mat &D_mat_i){
+  arma::vec beta_prop(n_beta), mean_cur(n_sample), mean_prop(n_sample), beta_cur_tmp = beta_cur.t();
+  arma::vec eta(n_sample), eta_prop(n_sample), mean_mala(n_beta), mean_mala_prop(n_beta);
+  arma::vec drift_cur(n_beta), drift_prop(n_beta), norm_vec(n_beta);
+  arma::vec CPR(n_sample), MPR(n_sample), CTD(n_beta), MTD(n_beta);
+  arma::mat cov_mat_cur(n_beta, n_beta), cov_mat_prop(n_beta, n_beta);
+  double ll_prop, ll_cur, mh_prop, mh_cur, rho_cur = 1.0 / alpha_cur;
+  int j;
+  arma::vec prior_mean_betas(n_beta);
+  prior_mean_betas.zeros();
+  norm_vec.randn();
+
+  eta = design_mat * beta_cur_tmp + log_offset;
+  mean_cur = arma::exp(eta);
+
+  CPR = counts.t() + rho_cur;
+  MPR = mean_cur + rho_cur;
+  CTD = arma::trans(counts * design_mat);
+  MTD = arma::trans(mean_cur.t() * design_mat);
+
+  // Rcpp::Rcout << "CPR = " << CPR << std::endl;
+  // Rcpp::Rcout << "MPR = " << MPR << std::endl;
+  // Rcpp::Rcout << "CTD = " << CTD << std::endl;
+  // Rcpp::Rcout << "MTD = " << MTD << std::endl;
+
+  drift_cur = CTD;
+  for(j = 0; j < n_beta; j++){
+    drift_cur(j) -= arma::sum(CPR % (mean_cur % design_mat.col(j)) % (1.0 / MPR));
+  }
+  mean_mala = beta_cur_tmp + (h_step / 2.0) * drift_cur;
+  // Rcpp::Rcout << "mean_mala = " << mean_mala << std::endl;
+  beta_prop = mean_mala + sqrt(h_step) * norm_vec;
+  eta_prop = design_mat * beta_prop + log_offset;
+  mean_prop = arma::exp(eta_prop);
+  // Rcpp::Rcout << "line 5391 check" << std::endl;
+  MPR = mean_prop + rho_cur;
+  drift_prop = CTD;
+  for(j = 0; j < n_beta; j++){
+    drift_prop(j) -= arma::sum(CPR % (mean_prop % design_mat.col(j)) % (1.0 / MPR));
+  }
+  mean_mala_prop = beta_prop + (h_step / 2.0) * drift_prop;
+
+  ll_cur = arma::sum(counts * arma::log(mean_cur) - (counts + rho_cur) * arma::log(1.0 + mean_cur * alpha_cur));
+  ll_prop = arma::sum(counts * arma::log(mean_prop) - (counts + rho_cur) * arma::log(1.0 + mean_prop * alpha_cur));
+
+  mh_cur = ll_cur +
+    log(dmvnrm_1f_inv(beta_cur_tmp, prior_mean_betas, R_mat, R_mat_i)) -
+    log(dmvnrm_1f_inv(beta_cur_tmp, mean_mala_prop, D_mat, D_mat_i));
+
+  mh_prop = ll_prop +
+    log(dmvnrm_1f_inv(beta_prop, prior_mean_betas, R_mat, R_mat_i)) -
+    log(dmvnrm_1f_inv(beta_prop, mean_mala, D_mat, D_mat_i));
+
+  if(R::runif(0, 1) < exp(mh_prop - mh_cur)){
+    beta_cur_tmp = beta_prop;
+    accept_rec += 1;
+  }
+  return beta_cur_tmp;
+}
+
+
+//' Single feature GLM chain using MALA proposal
+//'
+//' Run an MCMC for the Negative Binomial mixed model (short description, one or two sentences)
+//'
+//' This is where you write details on the function...
+//'
+//' more details....
+//'
+//' @param counts a vector of counts
+//' @param log_offset vector of offsets on log scale
+//' @param starting_betas vector of starting values for betas
+//' @param design_mat design matrix for mean response
+//' @param prior_sd_betas prior std. dev. for regression coefficients
+//' @param prior_sd_rs prior std. dev for dispersion parameters
+//' @param mean_rho prior mean for dispersion parameter
+//' @param rw_sd_rs random walk std. dev. for proposing dispersion values
+//' @param n_sample random walk std. dev. for proposing dispersion values
+//' @param n_beta random walk std. dev. for proposing dispersion values
+//' @param n_it random walk std. dev. for proposing dispersion values
+//' @param h_step random walk std. dev. for proposing dispersion values
+//' @author Brian Vestal
+//'
+//' @return
+//' Returns a list with a cube of regression parameters, including random effects, a matrix of dispersion values, and a matrix of random intercept variances
+//'
+//' @export
+// [[Rcpp::export]]
+
+
+
+arma::mat whole_chain_nbglm_mala(const arma::rowvec &counts,
+                             const arma::vec &log_offset,
+                             const arma::rowvec &starting_betas,
+                             const arma::mat &design_mat,
+                             const double &mean_rho,
+                             const double &prior_sd_betas,
+                             const double &prior_sd_rs,
+                             const double &rw_sd_rs,
+                             const double &n_beta,
+                             const double &n_sample,
+                             const int &n_it,
+                             const double &h_step){
+  int i = 1, accepts = 0;
+  arma::mat ret(n_it, n_beta + 2, arma::fill::zeros);
+  arma::mat betas_sample(n_it, n_beta);
+  arma::rowvec betas_cur(n_beta), betas_last(n_beta);
+  arma::vec disp_sample(n_it);
+  double prior_var_betas = pow(prior_sd_betas, 2);
+  arma::vec R_mat_diag(n_beta);
+  R_mat_diag.fill(prior_var_betas);
+  arma::mat R_mat(n_beta, n_beta), R_mat_i(n_beta, n_beta), D_mat(n_beta, n_beta), D_mat_i(n_beta, n_beta);
+  //Rcpp::Rcout << "line 5469 check" << std::endl;
+  R_mat.zeros();
+  R_mat_i.zeros();
+  D_mat.zeros();
+  D_mat_i.zeros();
+
+  R_mat.diag() += prior_var_betas;
+  R_mat_i.diag() += 1.0 / prior_var_betas;
+  D_mat.diag() += h_step;
+  D_mat_i.diag() += 1.0 / h_step;
+
+  betas_sample.row(0) = starting_betas;
+  disp_sample.zeros();
+  disp_sample(0) = exp(mean_rho);
+  betas_cur = starting_betas;
+  betas_last = starting_betas;
+  while(i < n_it){
+    //Rcpp::Rcout << "line 5486 check" << std::endl;
+    betas_cur = arma::trans(update_betas_mala(betas_last,
+                                                  counts,
+                                                  disp_sample(i-1),
+                                                  log_offset,
+                                                  design_mat,
+                                                  prior_sd_betas,
+                                                  n_beta,
+                                                  n_sample,
+                                                  accepts,
+                                                  h_step,
+                                                  R_mat,
+                                                  R_mat_i,
+                                                  D_mat,
+                                                  D_mat_i));
+    betas_last = betas_cur;
+    betas_sample.row(i) = betas_cur;
+
+    disp_sample(i) = update_rho(betas_cur,
+                counts,
+                disp_sample(i-1),
+                mean_rho,
+                log_offset,
+                design_mat,
+                prior_sd_rs,
+                rw_sd_rs,
+                n_beta,
+                n_sample);
+    i++;
+  }
+  ret.cols(0, n_beta - 1) = betas_sample;
+  ret.col(n_beta) = disp_sample;
+  ret(0, n_beta+1) = accepts;
+  return(ret);
+}
+
+
+
+
+
+
+
+
+
+
