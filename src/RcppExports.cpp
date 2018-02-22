@@ -332,8 +332,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // nbglm_mcmc_fp2
-Rcpp::List nbglm_mcmc_fp2(arma::mat counts, arma::mat design_mat, double prior_sd_betas, double prior_sd_rs, arma::vec prior_mean_log_rs, int n_it, double rw_sd_rs, arma::vec log_offset, arma::mat starting_betas, int grain_size, bool return_summary, double burn_in_prop);
-RcppExport SEXP _mcmseq_nbglm_mcmc_fp2(SEXP countsSEXP, SEXP design_matSEXP, SEXP prior_sd_betasSEXP, SEXP prior_sd_rsSEXP, SEXP prior_mean_log_rsSEXP, SEXP n_itSEXP, SEXP rw_sd_rsSEXP, SEXP log_offsetSEXP, SEXP starting_betasSEXP, SEXP grain_sizeSEXP, SEXP return_summarySEXP, SEXP burn_in_propSEXP) {
+Rcpp::List nbglm_mcmc_fp2(arma::mat counts, arma::mat design_mat, double prior_sd_betas, double prior_sd_rs, arma::vec prior_mean_log_rs, int n_it, double rw_sd_rs, arma::vec log_offset, arma::mat starting_betas, int grain_size, bool return_summary, double burn_in_prop, double VIF);
+RcppExport SEXP _mcmseq_nbglm_mcmc_fp2(SEXP countsSEXP, SEXP design_matSEXP, SEXP prior_sd_betasSEXP, SEXP prior_sd_rsSEXP, SEXP prior_mean_log_rsSEXP, SEXP n_itSEXP, SEXP rw_sd_rsSEXP, SEXP log_offsetSEXP, SEXP starting_betasSEXP, SEXP grain_sizeSEXP, SEXP return_summarySEXP, SEXP burn_in_propSEXP, SEXP VIFSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -349,7 +349,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type grain_size(grain_sizeSEXP);
     Rcpp::traits::input_parameter< bool >::type return_summary(return_summarySEXP);
     Rcpp::traits::input_parameter< double >::type burn_in_prop(burn_in_propSEXP);
-    rcpp_result_gen = Rcpp::wrap(nbglm_mcmc_fp2(counts, design_mat, prior_sd_betas, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, grain_size, return_summary, burn_in_prop));
+    Rcpp::traits::input_parameter< double >::type VIF(VIFSEXP);
+    rcpp_result_gen = Rcpp::wrap(nbglm_mcmc_fp2(counts, design_mat, prior_sd_betas, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, grain_size, return_summary, burn_in_prop, VIF));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -435,7 +436,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_mcmseq_nbmm_mcmc_sampler_rw", (DL_FUNC) &_mcmseq_nbmm_mcmc_sampler_rw, 14},
     {"_mcmseq_nbmm_mcmc_sampler_wls_hybrid", (DL_FUNC) &_mcmseq_nbmm_mcmc_sampler_wls_hybrid, 14},
     {"_mcmseq_nbmm_mcmc_sampler_wls_force_fp2", (DL_FUNC) &_mcmseq_nbmm_mcmc_sampler_wls_force_fp2, 13},
-    {"_mcmseq_nbglm_mcmc_fp2", (DL_FUNC) &_mcmseq_nbglm_mcmc_fp2, 12},
+    {"_mcmseq_nbglm_mcmc_fp2", (DL_FUNC) &_mcmseq_nbglm_mcmc_fp2, 13},
     {"_mcmseq_nbmm_mcmc_sampler_rw2", (DL_FUNC) &_mcmseq_nbmm_mcmc_sampler_rw2, 14},
     {"_mcmseq_nbll_beta", (DL_FUNC) &_mcmseq_nbll_beta, 4},
     {"_mcmseq_nbll_alpha", (DL_FUNC) &_mcmseq_nbll_alpha, 4},

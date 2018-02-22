@@ -278,7 +278,8 @@ arma::vec update_betas_wls_safe(const arma::rowvec &beta_cur,
                                 const int &n_sample,
                                 const arma::vec &R_mat_diag,
                                 int &accept_rec,
-                                int &inv_errors){
+                                int &inv_errors,
+                                const double &VIF){
   arma::vec beta_prop(n_beta), mean_cur(n_sample), mean_prop(n_sample), beta_cur_tmp = beta_cur.t();
   arma::vec y_tilde(n_sample), y_tilde_prop(n_sample), eta(n_sample), eta_prop(n_sample);
   arma::vec mean_wls_cur(n_beta), mean_wls_prop(n_beta);
@@ -316,6 +317,8 @@ arma::vec update_betas_wls_safe(const arma::rowvec &beta_cur,
     return(beta_cur_tmp);
   }
 
+  cov_mat_cur = cov_mat_cur * VIF;
+
   mean_wls_cur = cov_mat_cur * (ds_W_mat_i * y_tilde);
 
   beta_prop = arma::trans(rmvnormal(1, mean_wls_cur, cov_mat_cur));
@@ -337,7 +340,7 @@ arma::vec update_betas_wls_safe(const arma::rowvec &beta_cur,
     inv_errors++;
     return(beta_cur_tmp);
   }
-
+  cov_mat_prop = cov_mat_prop * VIF;
   mean_wls_prop = cov_mat_prop * (ds_W_mat_prop_i * y_tilde_prop);
 
   ll_cur = arma::sum(counts * arma::log(mean_cur) - (counts + rho_cur) * arma::log(1.0 + mean_cur * alpha_cur));
@@ -4698,7 +4701,8 @@ arma::mat whole_chain_nbglm2(const arma::rowvec &counts,
                              const double &rw_sd_rs,
                              const double &n_beta,
                              const double &n_sample,
-                             const int n_it){
+                             const int n_it,
+                             const double &VIF){
   int i = 1, accepts = 0, inv_errors = 0;
   arma::mat ret(n_it, n_beta + 3, arma::fill::zeros);
   arma::mat betas_sample(n_it, n_beta);
@@ -4725,7 +4729,8 @@ arma::mat whole_chain_nbglm2(const arma::rowvec &counts,
                                                   n_sample,
                                                   R_mat_diag,
                                                   accepts,
-                                                  inv_errors));
+                                                  inv_errors,
+                                                  VIF));
     betas_last = betas_cur;
     betas_sample.row(i) = betas_cur;
 
@@ -4767,6 +4772,7 @@ struct whole_feature_sample_struct_glm2 : public Worker
   const int &n_beta;
   const int &n_sample;
   const int &n_it;
+  const double &VIF;
 
   // density that I have accumulated
   arma::cube &upd_param;
@@ -4783,10 +4789,11 @@ struct whole_feature_sample_struct_glm2 : public Worker
                                    const int &n_beta,
                                    const int &n_sample,
                                    const int &n_it,
+                                   const double &VIF,
                                    arma::cube &upd_param)
     : counts(counts), log_offset(log_offset), starting_betas(starting_betas), design_mat(design_mat),
       mean_rhos(mean_rhos), prior_sd_rs(prior_sd_rs), rw_sd_rs(rw_sd_rs), prior_sd_betas(prior_sd_betas),
-      n_beta(n_beta), n_sample(n_sample), n_it(n_it), upd_param(upd_param){}
+      n_beta(n_beta), n_sample(n_sample), n_it(n_it), VIF(VIF), upd_param(upd_param){}
 
   // process just the elements of the range I've been asked to
   void operator()(std::size_t begin, std::size_t end) {
@@ -4801,7 +4808,8 @@ struct whole_feature_sample_struct_glm2 : public Worker
                       rw_sd_rs,
                       n_beta,
                       n_sample,
-                      n_it);
+                      n_it,
+                      VIF);
     }
   }
 
@@ -4817,7 +4825,8 @@ arma::cube mcmc_chain_glm_par2(const arma::mat &counts,
                                const double &prior_sd_betas,
                                const int &n_beta,
                                const int &n_sample,
-                               const int &n_it){
+                               const int &n_it,
+                               const double &VIF){
   arma::cube upd_param(n_it, n_beta + 3, counts.n_rows, arma::fill::zeros);
 
   whole_feature_sample_struct_glm2 mcmc_inst(counts,
@@ -4831,6 +4840,7 @@ arma::cube mcmc_chain_glm_par2(const arma::mat &counts,
                                              n_beta,
                                              n_sample,
                                              n_it,
+                                             VIF,
                                              upd_param);
   parallelFor(0, counts.n_rows, mcmc_inst);
   // Rcpp::Rcout << "Line 3183 check" << std::endl;
@@ -4875,7 +4885,8 @@ Rcpp::List nbglm_mcmc_fp2(arma::mat counts,
                           arma::mat starting_betas,
                           int grain_size = 1,
                           bool return_summary = true,
-                          double burn_in_prop = .1){
+                          double burn_in_prop = .1,
+                          double VIF = 1){
 
   arma::cube ret;
   int n_beta = design_mat.n_cols, n_sample = counts.n_cols, n_gene = counts.n_rows;
@@ -4894,7 +4905,8 @@ Rcpp::List nbglm_mcmc_fp2(arma::mat counts,
                             prior_sd_betas,
                             n_beta,
                             n_sample,
-                            n_it);
+                            n_it,
+                            VIF);
 
 
   arma::cube betas_ret;

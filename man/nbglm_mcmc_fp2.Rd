@@ -6,7 +6,7 @@
 \usage{
 nbglm_mcmc_fp2(counts, design_mat, prior_sd_betas, prior_sd_rs,
   prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas,
-  grain_size = 1L, return_summary = TRUE, burn_in_prop = 0.1)
+  grain_size = 1L, return_summary = TRUE, burn_in_prop = 0.1, VIF = 1)
 }
 \arguments{
 \item{counts}{a matrix of counts}

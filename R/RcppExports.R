@@ -471,8 +471,8 @@ nbmm_mcmc_sampler_wls_force_fp2 <- function(counts, design_mat, design_mat_re, p
 #' Returns a list with a cube of regression parameters, and a matrix of dispersion values
 #'
 #' @export
-nbglm_mcmc_fp2 <- function(counts, design_mat, prior_sd_betas, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, grain_size = 1L, return_summary = TRUE, burn_in_prop = .1) {
-    .Call('_mcmseq_nbglm_mcmc_fp2', PACKAGE = 'mcmseq', counts, design_mat, prior_sd_betas, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, grain_size, return_summary, burn_in_prop)
+nbglm_mcmc_fp2 <- function(counts, design_mat, prior_sd_betas, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, grain_size = 1L, return_summary = TRUE, burn_in_prop = .1, VIF = 1) {
+    .Call('_mcmseq_nbglm_mcmc_fp2', PACKAGE = 'mcmseq', counts, design_mat, prior_sd_betas, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, grain_size, return_summary, burn_in_prop, VIF)
 }
 
 #' Negative Binomial GLMM MCMC Random Walk (full parallel chians)
