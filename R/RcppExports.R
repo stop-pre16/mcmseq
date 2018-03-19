@@ -636,3 +636,32 @@ nbglm_mcmc_fp_mala <- function(counts, design_mat, prior_sd_betas, prior_sd_rs, 
     .Call('_mcmseq_nbglm_mcmc_fp_mala', PACKAGE = 'mcmseq', counts, design_mat, prior_sd_betas, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, grain_size, return_summary, burn_in_prop, h_step)
 }
 
+#' Negative Binomial GLM MCMC WLS (full parallel chians)
+#'
+#' Run an MCMC for the Negative Binomial mixed model (short description, one or two sentences)
+#'
+#' This is where you write details on the function...
+#'
+#' more details....
+#'
+#' @param counts a matrix of counts
+#' @param design_mat design matrix for mean response
+#' @param prior_sd_betas prior std. dev. for regression coefficients
+#' @param prior_sd_rs prior std. dev for dispersion parameters
+#' @param prior_mean_log_rs vector of prior means for dispersion parameters
+#' @param n_it number of iterations to run MCMC
+#' @param rw_sd_rs random wal std. dev. for proposing dispersion values
+#' @param log_offset vector of offsets on log scale
+#' @param grain_size minimum size of parallel jobs, defaults to 1, can ignore for now
+#' @param return_summary return only a summary (point estimates and p-values where appropriate)
+#'
+#' @author Brian Vestal
+#'
+#' @return
+#' Returns a list with a cube of regression parameters, and a matrix of dispersion values
+#'
+#' @export
+nbglm_mcmc_fp_sum <- function(counts, design_mat, prior_sd_betas, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, grain_size = 1L, burn_in_prop = .1, VIF = 1) {
+    .Call('_mcmseq_nbglm_mcmc_fp_sum', PACKAGE = 'mcmseq', counts, design_mat, prior_sd_betas, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, grain_size, burn_in_prop, VIF)
+}
+
