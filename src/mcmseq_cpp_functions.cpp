@@ -5745,7 +5745,7 @@ arma::mat whole_chain_nbglm_sum(const arma::rowvec &counts,
                                 const double &prop_burn){
   int i = 1, accepts = 0, inv_errors = 0;
   //arma::mat ret(n_it, n_beta + 3, arma::fill::zeros);
-  arma::mat ret(n_beta, 7, arma::fill::zeros);
+  arma::mat ret(n_beta, 8, arma::fill::zeros);
   arma::mat betas_sample(n_it, n_beta);
   arma::rowvec betas_cur(n_beta), betas_last(n_beta);
   arma::vec disp_sample(n_it);
@@ -5793,17 +5793,21 @@ arma::mat whole_chain_nbglm_sum(const arma::rowvec &counts,
     accepts = -1;
   }
   int burn_bound = round(n_it * prop_burn);
-  double n_it_double = n_it, n_burn_in = n_it_double * prop_burn;
+  double n_it_double = n_it, n_burn_in = n_it_double * prop_burn, sd_smooth;
   arma::uvec idx_ops;
+  arma::vec pdf_vals;
   ret.col(0) = arma::trans(arma::median(betas_sample.rows(burn_bound, n_it - 1), 0));
   ret.col(1) = arma::trans(arma::stddev(betas_sample.rows(burn_bound, n_it - 1), 0));
-  ret(0, 5) = arma::mean(disp_sample.rows(burn_bound, n_it - 1));
-  ret(0, 6) = accepts;
+  ret(0, 6) = arma::mean(disp_sample.rows(burn_bound, n_it - 1));
+  ret(0, 7) = accepts;
   for(int k = 0; k < n_beta; k++){
     ret(k, 2) = R::dnorm4(0, ret(k, 0), ret(k, 1), 0) / R::dnorm4(0, 0, prior_sd_betas, 0);
-    ret(k, 3) = 2.0 * R::pnorm5(0, fabs(ret(k, 0)), ret(k, 1), 1, 0);
+    sd_smooth = 1.06 * ret(k, 1) * pow(n_it_double - n_burn_in, -0.20);
+    pdf_vals = arma::normpdf(betas_sample.rows(burn_bound, n_it - 1).col(k), 0, sd_smooth);
+    ret(k, 3) = arma::mean(pdf_vals) / R::dnorm4(0, 0, prior_sd_betas, 0);
+    ret(k, 4) = 2.0 * R::pnorm5(0, fabs(ret(k, 0)), ret(k, 1), 1, 0);
     idx_ops = arma::find((ret(k, 0) * betas_sample.rows(burn_bound, n_it - 1).col(k)) < 0);
-    ret(k, 4) = (2.0 * idx_ops.n_elem) / (n_it_double - n_burn_in);
+    ret(k, 5) = (2.0 * idx_ops.n_elem) / (n_it_double - n_burn_in);
   }
   return(ret);
 }
@@ -5881,7 +5885,7 @@ arma::cube mcmc_chain_glm_sum_par(const arma::mat &counts,
                                   const int &n_it,
                                   const double &VIF,
                                   const double &prop_burn){
-  arma::cube upd_param(n_beta, 7, counts.n_rows, arma::fill::zeros);
+  arma::cube upd_param(n_beta, 8, counts.n_rows, arma::fill::zeros);
 
   whole_feature_sample_struct_glm_sum mcmc_inst(counts,
                                                 log_offset,
@@ -5943,7 +5947,7 @@ Rcpp::List nbglm_mcmc_fp_sum(arma::mat counts,
                              double VIF = 1){
 
   int n_beta = design_mat.n_cols, n_sample = counts.n_cols, n_gene = counts.n_rows;
-  arma::cube ret(n_beta, 7, n_gene);
+  arma::cube ret(n_beta, 8, n_gene);
   int n_beta_start = starting_betas.n_cols;
   arma::mat starting_betas2(counts.n_rows, n_beta);
   starting_betas2.zeros();
@@ -5968,9 +5972,9 @@ Rcpp::List nbglm_mcmc_fp_sum(arma::mat counts,
   arma::mat disp_ret;
   arma::vec accepts_ret;
 
-  betas_ret = ret.tube(arma::span(), arma::span(0, 4));
-  disp_ret = ret.tube(0, 5);
-  accepts_ret = ret.tube(0, 6);
+  betas_ret = ret.tube(arma::span(), arma::span(0, 5));
+  disp_ret = ret.tube(0, 6);
+  accepts_ret = ret.tube(0, 7);
   //inv_errors_ret = ret.tube(0, n_beta+2);
 
   return Rcpp::List::create(Rcpp::Named("betas_est") = betas_ret,
@@ -6008,7 +6012,7 @@ arma::mat whole_chain_nbglmm_sum(const arma::rowvec &counts,
                                  const double &prop_burn){
   int n_beta_tot = n_beta + n_beta_re, i = 1, accepts = 0, inv_errors = 0;
   double a_rand_int_post = prior_sd_betas_a + n_beta_re / 2.0, b_rand_int_post;
-  arma::mat ret(n_beta, 8, arma::fill::zeros);
+  arma::mat ret(n_beta, 9, arma::fill::zeros);
   arma::mat betas_sample(n_it, n_beta);
   arma::rowvec betas_cur(n_beta_tot), beta_cur_re(n_beta_re), betas_last(n_beta_tot);
   arma::vec disp_sample(n_it), sigma2_sample(n_it);
@@ -6062,20 +6066,42 @@ arma::mat whole_chain_nbglmm_sum(const arma::rowvec &counts,
     ret(0, 7) = accepts;
     return(ret);
   }
-
-  int burn_bound = round(n_it * prop_burn);
-  double n_it_double = n_it, n_burn_in = n_it_double * prop_burn;
+  /*
+   * int burn_bound = round(n_it * prop_burn);
+   double n_it_double = n_it, n_burn_in = n_it_double * prop_burn, sd_smooth;
   arma::uvec idx_ops;
+  arma::vec pdf_vals;
   ret.col(0) = arma::trans(arma::median(betas_sample.rows(burn_bound, n_it - 1), 0));
   ret.col(1) = arma::trans(arma::stddev(betas_sample.rows(burn_bound, n_it - 1), 0));
-  ret(0, 5) = arma::median(disp_sample.rows(burn_bound, n_it - 1));
-  ret(0, 6) = arma::median(sigma2_sample.rows(burn_bound, n_it - 1));
+  ret(0, 6) = arma::mean(disp_sample.rows(burn_bound, n_it - 1));
   ret(0, 7) = accepts;
   for(int k = 0; k < n_beta; k++){
+  ret(k, 2) = R::dnorm4(0, ret(k, 0), ret(k, 1), 0) / R::dnorm4(0, 0, prior_sd_betas, 0);
+  sd_smooth = 1.06 * ret(k, 1) * pow(n_it_double - n_burn_in, -0.20);
+  pdf_vals = arma::normpdf(betas_sample.rows(burn_bound, n_it - 1).col(k), 0, sd_smooth);
+  ret(k, 3) = arma::mean(pdf_vals) / R::dnorm4(0, 0, prior_sd_betas, 0);
+  ret(k, 4) = 2.0 * R::pnorm5(0, fabs(ret(k, 0)), ret(k, 1), 1, 0);
+  idx_ops = arma::find((ret(k, 0) * betas_sample.rows(burn_bound, n_it - 1).col(k)) < 0);
+  ret(k, 5) = (2.0 * idx_ops.n_elem) / (n_it_double - n_burn_in);
+  }
+   */
+  int burn_bound = round(n_it * prop_burn);
+  double n_it_double = n_it, n_burn_in = n_it_double * prop_burn, sd_smooth;
+  arma::uvec idx_ops;
+  arma::vec pdf_vals;
+  ret.col(0) = arma::trans(arma::median(betas_sample.rows(burn_bound, n_it - 1), 0));
+  ret.col(1) = arma::trans(arma::stddev(betas_sample.rows(burn_bound, n_it - 1), 0));
+  ret(0, 6) = arma::median(disp_sample.rows(burn_bound, n_it - 1));
+  ret(0, 7) = arma::median(sigma2_sample.rows(burn_bound, n_it - 1));
+  ret(0, 8) = accepts;
+  for(int k = 0; k < n_beta; k++){
     ret(k, 2) = R::dnorm4(0, ret(k, 0), ret(k, 1), 0) / R::dnorm4(0, 0, prior_sd_betas, 0);
-    ret(k, 3) = 2.0 * R::pnorm5(0, fabs(ret(k, 0)), ret(k, 1), 1, 0);
+    sd_smooth = 1.06 * ret(k, 1) * pow(n_it_double - n_burn_in, -0.20);
+    pdf_vals = arma::normpdf(betas_sample.rows(burn_bound, n_it - 1).col(k), 0, sd_smooth);
+    ret(k, 3) = arma::mean(pdf_vals) / R::dnorm4(0, 0, prior_sd_betas, 0);
+    ret(k, 4) = 2.0 * R::pnorm5(0, fabs(ret(k, 0)), ret(k, 1), 1, 0);
     idx_ops = arma::find((ret(k, 0) * betas_sample.rows(burn_bound, n_it - 1).col(k)) < 0);
-    ret(k, 4) = (2.0 * idx_ops.n_elem) / (n_it_double - n_burn_in);
+    ret(k, 5) = (2.0 * idx_ops.n_elem) / (n_it_double - n_burn_in);
   }
   return(ret);
 }
@@ -6177,7 +6203,7 @@ arma::cube mcmc_chain_par_sum(const arma::mat &counts,
                            const double &prior_sd_betas_b,
                            const int &n_it,
                            const double &prop_burn){
-  arma::cube upd_param(n_beta, 8, counts.n_rows, arma::fill::zeros);
+  arma::cube upd_param(n_beta, 9, counts.n_rows, arma::fill::zeros);
 
   whole_feature_sample_struct_sum mcmc_inst(counts,
                                          log_offset,
@@ -6272,10 +6298,10 @@ Rcpp::List nbmm_mcmc_sampler_wls_force_fp_sum(arma::mat counts,
   arma::mat disp_ret, sigma2_ret;
   arma::vec accepts_ret;
 
-  betas_ret = ret.tube(arma::span(), arma::span(0, 4));
-  disp_ret = ret.tube(0, 5);
-  sigma2_ret = ret.tube(0, 6);
-  accepts_ret = ret.tube(0, 7);
+  betas_ret = ret.tube(arma::span(), arma::span(0, 5));
+  disp_ret = ret.tube(0, 6);
+  sigma2_ret = ret.tube(0, 7);
+  accepts_ret = ret.tube(0, 8);
   //inv_errors_ret = ret.tube(0, n_beta+2);
 
   return Rcpp::List::create(Rcpp::Named("betas_est") = betas_ret,
