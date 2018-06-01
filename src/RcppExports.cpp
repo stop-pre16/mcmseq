@@ -511,6 +511,76 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// nbglm_mcmc_fp_sum_cont
+Rcpp::List nbglm_mcmc_fp_sum_cont(arma::mat counts, arma::mat design_mat, arma::mat contrast_mat, double prior_sd_betas, double prior_sd_rs, arma::vec prior_mean_log_rs, int n_it, double rw_sd_rs, arma::vec log_offset, arma::mat starting_betas, int grain_size, double burn_in_prop, double VIF);
+RcppExport SEXP _mcmseq_nbglm_mcmc_fp_sum_cont(SEXP countsSEXP, SEXP design_matSEXP, SEXP contrast_matSEXP, SEXP prior_sd_betasSEXP, SEXP prior_sd_rsSEXP, SEXP prior_mean_log_rsSEXP, SEXP n_itSEXP, SEXP rw_sd_rsSEXP, SEXP log_offsetSEXP, SEXP starting_betasSEXP, SEXP grain_sizeSEXP, SEXP burn_in_propSEXP, SEXP VIFSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type counts(countsSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type design_mat(design_matSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type contrast_mat(contrast_matSEXP);
+    Rcpp::traits::input_parameter< double >::type prior_sd_betas(prior_sd_betasSEXP);
+    Rcpp::traits::input_parameter< double >::type prior_sd_rs(prior_sd_rsSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type prior_mean_log_rs(prior_mean_log_rsSEXP);
+    Rcpp::traits::input_parameter< int >::type n_it(n_itSEXP);
+    Rcpp::traits::input_parameter< double >::type rw_sd_rs(rw_sd_rsSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type log_offset(log_offsetSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type starting_betas(starting_betasSEXP);
+    Rcpp::traits::input_parameter< int >::type grain_size(grain_sizeSEXP);
+    Rcpp::traits::input_parameter< double >::type burn_in_prop(burn_in_propSEXP);
+    Rcpp::traits::input_parameter< double >::type VIF(VIFSEXP);
+    rcpp_result_gen = Rcpp::wrap(nbglm_mcmc_fp_sum_cont(counts, design_mat, contrast_mat, prior_sd_betas, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, grain_size, burn_in_prop, VIF));
+    return rcpp_result_gen;
+END_RCPP
+}
+// nbmm_mcmc_sampler_wls_force_fp_sum_cont
+Rcpp::List nbmm_mcmc_sampler_wls_force_fp_sum_cont(arma::mat counts, arma::mat design_mat, arma::mat design_mat_re, arma::mat contrast_mat, double prior_sd_betas, double prior_sd_betas_a, double prior_sd_betas_b, double prior_sd_rs, arma::vec prior_mean_log_rs, int n_it, double rw_sd_rs, arma::vec log_offset, arma::mat starting_betas, double prop_burn_in, int grain_size);
+RcppExport SEXP _mcmseq_nbmm_mcmc_sampler_wls_force_fp_sum_cont(SEXP countsSEXP, SEXP design_matSEXP, SEXP design_mat_reSEXP, SEXP contrast_matSEXP, SEXP prior_sd_betasSEXP, SEXP prior_sd_betas_aSEXP, SEXP prior_sd_betas_bSEXP, SEXP prior_sd_rsSEXP, SEXP prior_mean_log_rsSEXP, SEXP n_itSEXP, SEXP rw_sd_rsSEXP, SEXP log_offsetSEXP, SEXP starting_betasSEXP, SEXP prop_burn_inSEXP, SEXP grain_sizeSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type counts(countsSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type design_mat(design_matSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type design_mat_re(design_mat_reSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type contrast_mat(contrast_matSEXP);
+    Rcpp::traits::input_parameter< double >::type prior_sd_betas(prior_sd_betasSEXP);
+    Rcpp::traits::input_parameter< double >::type prior_sd_betas_a(prior_sd_betas_aSEXP);
+    Rcpp::traits::input_parameter< double >::type prior_sd_betas_b(prior_sd_betas_bSEXP);
+    Rcpp::traits::input_parameter< double >::type prior_sd_rs(prior_sd_rsSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type prior_mean_log_rs(prior_mean_log_rsSEXP);
+    Rcpp::traits::input_parameter< int >::type n_it(n_itSEXP);
+    Rcpp::traits::input_parameter< double >::type rw_sd_rs(rw_sd_rsSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type log_offset(log_offsetSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type starting_betas(starting_betasSEXP);
+    Rcpp::traits::input_parameter< double >::type prop_burn_in(prop_burn_inSEXP);
+    Rcpp::traits::input_parameter< int >::type grain_size(grain_sizeSEXP);
+    rcpp_result_gen = Rcpp::wrap(nbmm_mcmc_sampler_wls_force_fp_sum_cont(counts, design_mat, design_mat_re, contrast_mat, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, prop_burn_in, grain_size));
+    return rcpp_result_gen;
+END_RCPP
+}
+// nbglm_mcmc_fp_sum_ovr
+Rcpp::List nbglm_mcmc_fp_sum_ovr(arma::mat counts, arma::mat design_mat, double prior_sd_betas, double prior_sd_rs, arma::vec prior_mean_log_rs, int n_it, double rw_sd_rs, arma::vec log_offset, arma::mat starting_betas, int grain_size, double burn_in_prop, double VIF);
+RcppExport SEXP _mcmseq_nbglm_mcmc_fp_sum_ovr(SEXP countsSEXP, SEXP design_matSEXP, SEXP prior_sd_betasSEXP, SEXP prior_sd_rsSEXP, SEXP prior_mean_log_rsSEXP, SEXP n_itSEXP, SEXP rw_sd_rsSEXP, SEXP log_offsetSEXP, SEXP starting_betasSEXP, SEXP grain_sizeSEXP, SEXP burn_in_propSEXP, SEXP VIFSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type counts(countsSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type design_mat(design_matSEXP);
+    Rcpp::traits::input_parameter< double >::type prior_sd_betas(prior_sd_betasSEXP);
+    Rcpp::traits::input_parameter< double >::type prior_sd_rs(prior_sd_rsSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type prior_mean_log_rs(prior_mean_log_rsSEXP);
+    Rcpp::traits::input_parameter< int >::type n_it(n_itSEXP);
+    Rcpp::traits::input_parameter< double >::type rw_sd_rs(rw_sd_rsSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type log_offset(log_offsetSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type starting_betas(starting_betasSEXP);
+    Rcpp::traits::input_parameter< int >::type grain_size(grain_sizeSEXP);
+    Rcpp::traits::input_parameter< double >::type burn_in_prop(burn_in_propSEXP);
+    Rcpp::traits::input_parameter< double >::type VIF(VIFSEXP);
+    rcpp_result_gen = Rcpp::wrap(nbglm_mcmc_fp_sum_ovr(counts, design_mat, prior_sd_betas, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, grain_size, burn_in_prop, VIF));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_mcmseq_nbglm_mcmc_fp", (DL_FUNC) &_mcmseq_nbglm_mcmc_fp, 10},
@@ -536,6 +606,9 @@ static const R_CallMethodDef CallEntries[] = {
     {"_mcmseq_nbglm_mcmc_fp_mala", (DL_FUNC) &_mcmseq_nbglm_mcmc_fp_mala, 13},
     {"_mcmseq_nbglm_mcmc_fp_sum", (DL_FUNC) &_mcmseq_nbglm_mcmc_fp_sum, 12},
     {"_mcmseq_nbmm_mcmc_sampler_wls_force_fp_sum", (DL_FUNC) &_mcmseq_nbmm_mcmc_sampler_wls_force_fp_sum, 14},
+    {"_mcmseq_nbglm_mcmc_fp_sum_cont", (DL_FUNC) &_mcmseq_nbglm_mcmc_fp_sum_cont, 13},
+    {"_mcmseq_nbmm_mcmc_sampler_wls_force_fp_sum_cont", (DL_FUNC) &_mcmseq_nbmm_mcmc_sampler_wls_force_fp_sum_cont, 15},
+    {"_mcmseq_nbglm_mcmc_fp_sum_ovr", (DL_FUNC) &_mcmseq_nbglm_mcmc_fp_sum_ovr, 12},
     {NULL, NULL, 0}
 };
 

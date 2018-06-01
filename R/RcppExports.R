@@ -697,3 +697,93 @@ nbmm_mcmc_sampler_wls_force_fp_sum <- function(counts, design_mat, design_mat_re
     .Call('_mcmseq_nbmm_mcmc_sampler_wls_force_fp_sum', PACKAGE = 'mcmseq', counts, design_mat, design_mat_re, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, prop_burn_in, grain_size)
 }
 
+#' Negative Binomial GLM MCMC WLS (full parallel chians)
+#'
+#' Run an MCMC for the Negative Binomial mixed model (short description, one or two sentences)
+#'
+#' This is where you write details on the function...
+#'
+#' more details....
+#'
+#' @param counts a matrix of counts
+#' @param design_mat design matrix for mean response
+#' @param contrast_mat contrast matrix (each row is a contrast of regression parameters to be tested)
+#' @param prior_sd_betas prior std. dev. for regression coefficients
+#' @param prior_sd_rs prior std. dev for dispersion parameters
+#' @param prior_mean_log_rs vector of prior means for dispersion parameters
+#' @param n_it number of iterations to run MCMC
+#' @param rw_sd_rs random wal std. dev. for proposing dispersion values
+#' @param log_offset vector of offsets on log scale
+#' @param grain_size minimum size of parallel jobs, defaults to 1, can ignore for now
+#'
+#' @author Brian Vestal
+#'
+#' @return
+#' Returns a list with a cube of regression parameters, and a matrix of dispersion values
+#'
+#' @export
+nbglm_mcmc_fp_sum_cont <- function(counts, design_mat, contrast_mat, prior_sd_betas, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, grain_size = 1L, burn_in_prop = .1, VIF = 1) {
+    .Call('_mcmseq_nbglm_mcmc_fp_sum_cont', PACKAGE = 'mcmseq', counts, design_mat, contrast_mat, prior_sd_betas, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, grain_size, burn_in_prop, VIF)
+}
+
+#' Negative Binomial GLMM MCMC WLS Force (full parallel chians)
+#'
+#' Run an MCMC for the Negative Binomial mixed model (short description, one or two sentences)
+#'
+#' This is where you write details on the function...
+#'
+#' more details....
+#'
+#' @param counts a matrix of counts
+#' @param design_mat design matrix for mean response
+#' @param design_mat_re design matrix for random intercepts
+#' @param prior_sd_betas prior std. dev. for regression coefficients
+#' @param prior_sd_betas_a alpha in inverse gamma prior for random intercept variance
+#' @param prior_sd_betas_b beta in inverse gamma prior for random intercept variance
+#' @param prior_sd_rs prior std. dev for dispersion parameters
+#' @param prior_mean_log_rs vector of prior means for dispersion parameters
+#' @param n_it number of iterations to run MCMC
+#' @param rw_sd_rs random wal std. dev. for proposing dispersion values
+#' @param log_offset vector of offsets on log scale
+#' @param prop_burn_in proportion of MCMC chain to discard as burn-in when computing summaries
+#' @param grain_size minimum size of parallel jobs, defaults to 1, can ignore for now
+#'
+#' @author Brian Vestal
+#'
+#' @return
+#' Returns a list with a cube of regression parameters, including random effects, a matrix of dispersion values, and a matrix of random intercept variances
+#'
+#' @export
+nbmm_mcmc_sampler_wls_force_fp_sum_cont <- function(counts, design_mat, design_mat_re, contrast_mat, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, prop_burn_in = 0.10, grain_size = 1L) {
+    .Call('_mcmseq_nbmm_mcmc_sampler_wls_force_fp_sum_cont', PACKAGE = 'mcmseq', counts, design_mat, design_mat_re, contrast_mat, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, prop_burn_in, grain_size)
+}
+
+#' Negative Binomial GLM MCMC WLS (full parallel chians)
+#'
+#' Run an MCMC for the Negative Binomial mixed model (short description, one or two sentences)
+#'
+#' This is where you write details on the function...
+#'
+#' more details....
+#'
+#' @param counts a matrix of counts
+#' @param design_mat design matrix for mean response
+#' @param contrast_mat contrast matrix (each row is a contrast of regression parameters to be tested)
+#' @param prior_sd_betas prior std. dev. for regression coefficients
+#' @param prior_sd_rs prior std. dev for dispersion parameters
+#' @param prior_mean_log_rs vector of prior means for dispersion parameters
+#' @param n_it number of iterations to run MCMC
+#' @param rw_sd_rs random wal std. dev. for proposing dispersion values
+#' @param log_offset vector of offsets on log scale
+#' @param grain_size minimum size of parallel jobs, defaults to 1, can ignore for now
+#'
+#' @author Brian Vestal
+#'
+#' @return
+#' Returns a list with a cube of regression parameters, and a matrix of dispersion values
+#'
+#' @export
+nbglm_mcmc_fp_sum_ovr <- function(counts, design_mat, prior_sd_betas, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, grain_size = 1L, burn_in_prop = .1, VIF = 1) {
+    .Call('_mcmseq_nbglm_mcmc_fp_sum_ovr', PACKAGE = 'mcmseq', counts, design_mat, prior_sd_betas, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, grain_size, burn_in_prop, VIF)
+}
+
