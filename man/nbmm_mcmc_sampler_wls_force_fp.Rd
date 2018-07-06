@@ -7,7 +7,7 @@
 nbmm_mcmc_sampler_wls_force_fp(counts, design_mat, design_mat_re,
   prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs,
   prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas,
-  grain_size = 1L)
+  grain_size = 1L, num_accept = 50L)
 }
 \arguments{
 \item{counts}{a matrix of counts}

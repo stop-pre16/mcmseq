@@ -214,8 +214,8 @@ nbmm_mcmc_sampler_wls <- function(counts, design_mat, design_mat_re, prior_sd_be
 #' Returns a list with a cube of regression parameters, including random effects, a matrix of dispersion values, and a matrix of random intercept variances
 #'
 #' @export
-nbmm_mcmc_sampler_wls_force <- function(counts, design_mat, design_mat_re, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, return_all_re = TRUE, n_re_return = 1L, grain_size = 1L) {
-    .Call('_mcmseq_nbmm_mcmc_sampler_wls_force', PACKAGE = 'mcmseq', counts, design_mat, design_mat_re, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, return_all_re, n_re_return, grain_size)
+nbmm_mcmc_sampler_wls_force <- function(counts, design_mat, design_mat_re, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, return_all_re = TRUE, n_re_return = 1L, num_accept = 50L, grain_size = 1L) {
+    .Call('_mcmseq_nbmm_mcmc_sampler_wls_force', PACKAGE = 'mcmseq', counts, design_mat, design_mat_re, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, return_all_re, n_re_return, num_accept, grain_size)
 }
 
 #' Negative Binomial GLMM MCMC WLS Gamma Dispersion(title)
@@ -347,8 +347,8 @@ nbmm_mcmc_sampler_wls_split_half <- function(counts, design_mat, design_mat_re, 
 #' Returns a list with a cube of regression parameters, including random effects, a matrix of dispersion values, and a matrix of random intercept variances
 #'
 #' @export
-nbmm_mcmc_sampler_wls_force_fp <- function(counts, design_mat, design_mat_re, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, grain_size = 1L) {
-    .Call('_mcmseq_nbmm_mcmc_sampler_wls_force_fp', PACKAGE = 'mcmseq', counts, design_mat, design_mat_re, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, grain_size)
+nbmm_mcmc_sampler_wls_force_fp <- function(counts, design_mat, design_mat_re, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, grain_size = 1L, num_accept = 50L) {
+    .Call('_mcmseq_nbmm_mcmc_sampler_wls_force_fp', PACKAGE = 'mcmseq', counts, design_mat, design_mat_re, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, grain_size, num_accept)
 }
 
 #' Negative Binomial GLMM MCMC Random Walk (full parallel chians)
@@ -411,8 +411,8 @@ nbmm_mcmc_sampler_rw <- function(counts, design_mat, design_mat_re, prior_sd_bet
 #' Returns a list with a cube of regression parameters, including random effects, a matrix of dispersion values, and a matrix of random intercept variances
 #'
 #' @export
-nbmm_mcmc_sampler_wls_hybrid <- function(counts, design_mat, design_mat_re, prior_sd_betas, rw_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, grain_size = 1L) {
-    .Call('_mcmseq_nbmm_mcmc_sampler_wls_hybrid', PACKAGE = 'mcmseq', counts, design_mat, design_mat_re, prior_sd_betas, rw_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, grain_size)
+nbmm_mcmc_sampler_wls_hybrid <- function(counts, design_mat, design_mat_re, prior_sd_betas, rw_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, grain_size = 1L, num_accept = 50L) {
+    .Call('_mcmseq_nbmm_mcmc_sampler_wls_hybrid', PACKAGE = 'mcmseq', counts, design_mat, design_mat_re, prior_sd_betas, rw_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, grain_size, num_accept)
 }
 
 #' Negative Binomial GLMM MCMC WLS Force (full parallel chians)
@@ -442,8 +442,8 @@ nbmm_mcmc_sampler_wls_hybrid <- function(counts, design_mat, design_mat_re, prio
 #' Returns a list with a cube of regression parameters, including random effects, a matrix of dispersion values, and a matrix of random intercept variances
 #'
 #' @export
-nbmm_mcmc_sampler_wls_force_fp2 <- function(counts, design_mat, design_mat_re, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, grain_size = 1L) {
-    .Call('_mcmseq_nbmm_mcmc_sampler_wls_force_fp2', PACKAGE = 'mcmseq', counts, design_mat, design_mat_re, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, grain_size)
+nbmm_mcmc_sampler_wls_force_fp2 <- function(counts, design_mat, design_mat_re, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, grain_size = 1L, num_accept = 50L) {
+    .Call('_mcmseq_nbmm_mcmc_sampler_wls_force_fp2', PACKAGE = 'mcmseq', counts, design_mat, design_mat_re, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, grain_size, num_accept)
 }
 
 #' Negative Binomial GLM MCMC WLS (full parallel chians)
@@ -693,8 +693,8 @@ nbglm_mcmc_fp_sum <- function(counts, design_mat, prior_sd_betas, prior_sd_rs, p
 #' Returns a list with a cube of regression parameters, including random effects, a matrix of dispersion values, and a matrix of random intercept variances
 #'
 #' @export
-nbmm_mcmc_sampler_wls_force_fp_sum <- function(counts, design_mat, design_mat_re, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, prop_burn_in = 0.10, grain_size = 1L) {
-    .Call('_mcmseq_nbmm_mcmc_sampler_wls_force_fp_sum', PACKAGE = 'mcmseq', counts, design_mat, design_mat_re, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, prop_burn_in, grain_size)
+nbmm_mcmc_sampler_wls_force_fp_sum <- function(counts, design_mat, design_mat_re, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, prop_burn_in = 0.10, grain_size = 1L, num_accept = 50L) {
+    .Call('_mcmseq_nbmm_mcmc_sampler_wls_force_fp_sum', PACKAGE = 'mcmseq', counts, design_mat, design_mat_re, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, prop_burn_in, grain_size, num_accept)
 }
 
 #' Negative Binomial GLM MCMC WLS (full parallel chians)
@@ -754,8 +754,8 @@ nbglm_mcmc_fp_sum_cont <- function(counts, design_mat, contrast_mat, prior_sd_be
 #' Returns a list with a cube of regression parameters, including random effects, a matrix of dispersion values, and a matrix of random intercept variances
 #'
 #' @export
-nbmm_mcmc_sampler_wls_force_fp_sum_cont <- function(counts, design_mat, design_mat_re, contrast_mat, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, prop_burn_in = 0.10, grain_size = 1L) {
-    .Call('_mcmseq_nbmm_mcmc_sampler_wls_force_fp_sum_cont', PACKAGE = 'mcmseq', counts, design_mat, design_mat_re, contrast_mat, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, prop_burn_in, grain_size)
+nbmm_mcmc_sampler_wls_force_fp_sum_cont <- function(counts, design_mat, design_mat_re, contrast_mat, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, prop_burn_in = 0.10, grain_size = 1L, num_accept = 50L) {
+    .Call('_mcmseq_nbmm_mcmc_sampler_wls_force_fp_sum_cont', PACKAGE = 'mcmseq', counts, design_mat, design_mat_re, contrast_mat, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, prop_burn_in, grain_size, num_accept)
 }
 
 #' Negative Binomial GLM MCMC WLS (full parallel chians)

@@ -410,7 +410,8 @@ double update_rho_force(const arma::rowvec &beta_cur,
                         const double &rw_sd_rs,
                         const int &n_beta,
                         const int &n_sample,
-                        const int &it_num){
+                        const int &it_num,
+                        const int &num_accept){
   arma::vec mean_cur(n_sample);
   double ll_prop, ll_cur, mh_prop, mh_cur, rho_prop, rho_cur = 1.0 / alpha_cur, alpha_prop;
 
@@ -425,7 +426,7 @@ double update_rho_force(const arma::rowvec &beta_cur,
   mh_cur = ll_cur + R::dnorm4(log(alpha_cur), mean_alpha_cur, prior_sd_rs, 1);
   mh_prop = ll_prop + R::dnorm4(log(alpha_prop), mean_alpha_cur, prior_sd_rs, 1);
 
-  if((R::runif(0, 1) < exp(mh_prop - mh_cur)) && it_num > 50){
+  if((R::runif(0, 1) < exp(mh_prop - mh_cur)) && it_num > num_accept){
     // if(R::runif(0, 1) < exp(mh_prop - mh_cur)){
     return alpha_prop;
   }
@@ -878,6 +879,7 @@ struct upd_rhos_struct_force : public Worker
   const int &n_beta;
   const int &n_sample;
   const int &it_num;
+  const int &num_accept;
 
   // updates accumulated so far
   arma::vec &upd_rhos;
@@ -894,9 +896,10 @@ struct upd_rhos_struct_force : public Worker
                         const int &n_beta,
                         const int &n_sample,
                         const int &it_num,
+                        const int &num_accept,
                         arma::vec &upd_rhos)
     : beta_cur(beta_cur), counts(counts), alpha_cur(alpha_cur), mean_alpha_cur(mean_alpha_cur), log_offset(log_offset), design_mat(design_mat),
-      prior_sd_rs(prior_sd_rs), rw_sd_rs(rw_sd_rs), n_beta(n_beta), n_sample(n_sample), it_num(it_num), upd_rhos(upd_rhos) {}
+      prior_sd_rs(prior_sd_rs), rw_sd_rs(rw_sd_rs), n_beta(n_beta), n_sample(n_sample), it_num(it_num), num_accept(num_accept), upd_rhos(upd_rhos) {}
 
   // process just the elements of the range I've been asked to
   void operator()(std::size_t begin, std::size_t end) {
@@ -911,7 +914,8 @@ struct upd_rhos_struct_force : public Worker
                rw_sd_rs,
                n_beta,
                n_sample,
-               it_num);
+               it_num,
+               num_accept);
     }
   }
 
@@ -1076,6 +1080,7 @@ arma::vec para_update_rhos_force(const arma::mat &beta_cur,
                                  const int &n_beta,
                                  const int &n_sample,
                                  const int &it_num,
+                                 const int &num_accept,
                                  const int &grain_size){
   arma::vec upd_rhos(counts.n_rows);
 
@@ -1090,6 +1095,7 @@ arma::vec para_update_rhos_force(const arma::mat &beta_cur,
                                       n_beta,
                                       n_sample,
                                       it_num,
+                                      num_accept,
                                       upd_rhos);
   parallelFor(0, counts.n_rows, upd_rhos_inst, grain_size);
   return(upd_rhos);
@@ -1583,6 +1589,7 @@ arma::vec update_betas_wls_mm_force(const arma::rowvec &beta_cur,
                                     const int &n_sample,
                                     int &accept_rec,
                                     const int &it_num,
+                                    const int &num_accept,
                                     int &inv_errors){
   arma::vec beta_prop(n_beta + n_beta_re), mean_cur(n_sample), mean_prop(n_sample), beta_cur_tmp = beta_cur.t();
   arma::vec y_tilde(n_sample), y_tilde_prop(n_sample), eta(n_sample), eta_prop(n_sample);
@@ -1659,7 +1666,7 @@ arma::vec update_betas_wls_mm_force(const arma::rowvec &beta_cur,
     log(dmvnrm_1f(beta_prop, prior_mean_betas, R_mat)) -
     log(dmvnrm_1f(beta_prop, mean_wls_cur, cov_mat_cur));
 
-  if(R::runif(0, 1) < exp(mh_prop - mh_cur)){
+  if((R::runif(0, 1) < exp(mh_prop - mh_cur)) || it_num <= num_accept){
     beta_cur_tmp = beta_prop;
     accept_rec += 1;
   }
@@ -2254,6 +2261,7 @@ struct upd_betas_wls_struct_mm_force : public Worker
   const int &n_sample;
   arma::ivec &accept_rec_vec;
   const int &it_num;
+  const int &num_accept;
   arma::ivec &inv_errors_vec;
 
   // updates accumulated so far
@@ -2272,19 +2280,20 @@ struct upd_betas_wls_struct_mm_force : public Worker
                                 const int &n_sample,
                                 arma::ivec &accept_rec_vec,
                                 const int &it_num,
+                                const int &num_accept,
                                 arma::ivec &inv_errors_vec,
                                 arma::mat &upd_betas)
     : beta_cur(beta_cur), counts(counts), alpha_cur(alpha_cur), log_offset(log_offset), design_mat(design_mat),
       prior_sd_betas(prior_sd_betas), re_var(re_var), n_beta(n_beta), n_beta_re(n_beta_re),
-      n_sample(n_sample), accept_rec_vec(accept_rec_vec), it_num(it_num), inv_errors_vec(inv_errors_vec),
-      upd_betas(upd_betas) {}
+      n_sample(n_sample), accept_rec_vec(accept_rec_vec), it_num(it_num), num_accept(num_accept),
+      inv_errors_vec(inv_errors_vec), upd_betas(upd_betas) {}
 
   // process just the elements of the range I've been asked to
   void operator()(std::size_t begin, std::size_t end) {
     for(unsigned int i = begin; i < end; i++){
       upd_betas.row(i) = arma::trans(update_betas_wls_mm_force(beta_cur.row(i), counts.row(i), alpha_cur(i), log_offset,
                                      design_mat, prior_sd_betas, re_var(i), n_beta,n_beta_re, n_sample,
-                                     accept_rec_vec(i), it_num, inv_errors_vec(i)));
+                                     accept_rec_vec(i), it_num, num_accept, inv_errors_vec(i)));
     }
   }
 
@@ -2526,6 +2535,7 @@ arma::mat para_update_betas_wls_mm_force(const arma::mat &beta_cur,
                                          const int &n_sample,
                                          arma::ivec &accept_rec_vec,
                                          const int &it_num,
+                                         const int &num_accept,
                                          arma::ivec &inv_errors_vec,
                                          const int &grain_size){
   arma::mat upd_betas(beta_cur.n_rows, beta_cur.n_cols);
@@ -2542,6 +2552,7 @@ arma::mat para_update_betas_wls_mm_force(const arma::mat &beta_cur,
                                                n_sample,
                                                accept_rec_vec,
                                                it_num,
+                                               num_accept,
                                                inv_errors_vec,
                                                upd_betas);
   parallelFor(0, counts.n_rows, upd_betas_inst, grain_size);
@@ -2840,6 +2851,7 @@ Rcpp::List nbmm_mcmc_sampler_wls_force(arma::mat counts,
                                        arma::mat starting_betas,
                                        bool return_all_re = true,
                                        int n_re_return = 1,
+                                       int num_accept = 50,
                                        int grain_size = 1){
   int i, j, n_beta = design_mat.n_cols, n_beta_re = design_mat_re.n_cols, n_feature = counts.n_rows,
     n_sample = counts.n_cols, n_beta_tot = n_beta + n_beta_re;
@@ -2864,9 +2876,9 @@ Rcpp::List nbmm_mcmc_sampler_wls_force(arma::mat counts,
 
   for(i = 1; i < n_it; i++){
     //Rcpp::Rcout << "iteration "  << i << std::endl << std::endl;
-    betas.slice(i) = para_update_betas_wls_mm_force(betas.slice(i-1), counts, rhos.row(i-1).t(), log_offset, design_mat_tot, prior_sd_betas, sigma2.row(i-1), n_beta, n_beta_re, n_sample, accept_rec_vec, i, inv_errors_vec, grain_size);
+    betas.slice(i) = para_update_betas_wls_mm_force(betas.slice(i-1), counts, rhos.row(i-1).t(), log_offset, design_mat_tot, prior_sd_betas, sigma2.row(i-1), n_beta, n_beta_re, n_sample, accept_rec_vec, i, num_accept, inv_errors_vec, grain_size);
     betas_cur_mat = betas.slice(i).cols(n_beta, n_beta_tot - 1);
-    rhos.row(i) = arma::trans(para_update_rhos_force(betas.slice(i), counts, rhos.row(i-1).t(), mean_rho_cur, log_offset, design_mat_tot, prior_sd_rs, rw_sd_rs, n_beta_tot, n_sample, i, grain_size));
+    rhos.row(i) = arma::trans(para_update_rhos_force(betas.slice(i), counts, rhos.row(i-1).t(), mean_rho_cur, log_offset, design_mat_tot, prior_sd_rs, rw_sd_rs, n_beta_tot, n_sample, i, num_accept, grain_size));
 
     //  Updating random intercept variance
     for(j = 0; j < n_feature; j++){
@@ -3237,7 +3249,8 @@ arma::field<arma::mat> whole_chain_nbglmm(const arma::rowvec &counts,
                                           const double &n_sample,
                                           const double &prior_sd_betas_a,
                                           const double &prior_sd_betas_b,
-                                          const int &n_it){
+                                          const int &n_it,
+                                          const int &num_accept){
   int n_beta_tot = n_beta + n_beta_re, i, accepts = 0, inv_errors = 0;
   double a_rand_int_post = prior_sd_betas_a + n_beta_re / 2.0, b_rand_int_post;
   arma::field<arma::mat> ret(1, 5);
@@ -3309,6 +3322,7 @@ arma::field<arma::mat> whole_chain_nbglmm(const arma::rowvec &counts,
                                                       n_sample,
                                                       accepts,
                                                       i,
+                                                      num_accept,
                                                       inv_errors));
     betas_last = betas_cur;
     beta_cur_re = betas_cur.cols(n_beta, n_beta_tot - 1);
@@ -3323,7 +3337,8 @@ arma::field<arma::mat> whole_chain_nbglmm(const arma::rowvec &counts,
                 rw_sd_rs,
                 n_beta_tot,
                 n_sample,
-                i);
+                i,
+                num_accept);
 
     b_rand_int_post = prior_sd_betas_b + arma::dot(beta_cur_re.t(), beta_cur_re.t()) / 2.0;
     sigma2_sample(i) = 1.0 / (R::rgamma(a_rand_int_post, 1.0 / b_rand_int_post));
@@ -3378,6 +3393,7 @@ struct whole_feature_sample_struct : public Worker
   const double &prior_sd_betas_a;
   const double &prior_sd_betas_b;
   const int &n_it;
+  const int &num_accept;
 
   // density that I have accumulated
   arma::cube &upd_betas;
@@ -3402,6 +3418,7 @@ struct whole_feature_sample_struct : public Worker
                               const double &prior_sd_betas_a,
                               const double &prior_sd_betas_b,
                               const int &n_it,
+                              const int &num_accept,
                               arma::cube &upd_betas,
                               arma::cube &upd_alphas,
                               arma::cube &upd_sigmas,
@@ -3410,7 +3427,7 @@ struct whole_feature_sample_struct : public Worker
     : counts(counts), log_offset(log_offset), starting_betas(starting_betas), design_mat(design_mat),
       mean_rhos(mean_rhos), prior_sd_rs(prior_sd_rs), rw_sd_rs(rw_sd_rs), prior_sd_betas(prior_sd_betas),
       n_beta(n_beta), n_beta_re(n_beta_re), n_sample(n_sample), prior_sd_betas_a(prior_sd_betas_a),
-      prior_sd_betas_b(prior_sd_betas_b), n_it(n_it), upd_betas(upd_betas), upd_alphas(upd_alphas),
+      prior_sd_betas_b(prior_sd_betas_b), n_it(n_it), num_accept(num_accept), upd_betas(upd_betas), upd_alphas(upd_alphas),
       upd_sigmas(upd_sigmas), upd_accepts(upd_accepts), upd_inv_errors(upd_inv_errors){}
 
   // arma::field<arma::mat> whole_chain_nbglmm(const arma::rowvec &counts,
@@ -3443,7 +3460,8 @@ struct whole_feature_sample_struct : public Worker
                                         n_sample,
                                         prior_sd_betas_a,
                                         prior_sd_betas_b,
-                                        n_it);
+                                        n_it,
+                                        num_accept);
       // Rcpp::Rcout << "Line 3124 check" << std::endl;
       upd_betas.slice(i) = mcmc_res_tmp(0, 0);
       // Rcpp::Rcout << "Line 3126 check" << std::endl;
@@ -3473,7 +3491,8 @@ arma::field<arma::cube> mcmc_chain_par(const arma::mat &counts,
                                        const int &n_sample,
                                        const double &prior_sd_betas_a,
                                        const double &prior_sd_betas_b,
-                                       const int &n_it){
+                                       const int &n_it,
+                                       const int &num_accept){
   arma::cube upd_betas(n_it, n_beta, counts.n_rows, arma::fill::zeros	);
   arma::cube upd_alphas(n_it, counts.n_rows, 1, arma::fill::zeros);
   arma::cube upd_sigmas(n_it, counts.n_rows, 1, arma::fill::zeros);
@@ -3495,6 +3514,7 @@ arma::field<arma::cube> mcmc_chain_par(const arma::mat &counts,
                                         prior_sd_betas_a,
                                         prior_sd_betas_b,
                                         n_it,
+                                        num_accept,
                                         upd_betas,
                                         upd_alphas,
                                         upd_sigmas,
@@ -3551,7 +3571,8 @@ Rcpp::List nbmm_mcmc_sampler_wls_force_fp(arma::mat counts,
                                           double rw_sd_rs,
                                           arma::vec log_offset,
                                           arma::mat starting_betas,
-                                          int grain_size = 1){
+                                          int grain_size = 1,
+                                          int num_accept = 50){
 
   arma::field<arma::cube> ret;
   arma::mat design_mat_tot = arma::join_rows(design_mat, design_mat_re);
@@ -3573,7 +3594,8 @@ Rcpp::List nbmm_mcmc_sampler_wls_force_fp(arma::mat counts,
                        n_sample,
                        prior_sd_betas_a,
                        prior_sd_betas_b,
-                       n_it);
+                       n_it,
+                       num_accept);
   // arma::field<arma::cube> mcmc_chain_par(const arma::mat &counts,
   //                                        const arma::vec &log_offset,
   //                                        const arma::mat &starting_betas,
@@ -3679,7 +3701,7 @@ arma::field<arma::mat> whole_chain_nbglmm_rw(const arma::rowvec &counts,
                                              const double &prior_sd_betas_a,
                                              const double &prior_sd_betas_b,
                                              const int n_it){
-  int n_beta_tot = n_beta + n_beta_re, accepts = 0, i;
+  int n_beta_tot = n_beta + n_beta_re, accepts = 0, i, num_accept = 0;
   double a_rand_int_post = prior_sd_betas_a + n_beta_re / 2.0, b_rand_int_post;
   arma::field<arma::mat> ret(1, 4);
   arma::mat betas_sample(n_it, n_beta);
@@ -3759,7 +3781,8 @@ arma::field<arma::mat> whole_chain_nbglmm_rw(const arma::rowvec &counts,
                 rw_sd_rs,
                 n_beta_tot,
                 n_sample,
-                i);
+                i,
+                num_accept);
     // Rcpp::Rcout << "Line 2994 check" << std::endl;
     b_rand_int_post = prior_sd_betas_b + arma::dot(beta_cur_re.t(), beta_cur_re.t()) / 2.0;
     // Rcpp::Rcout << "Line 3014 check" << std::endl;
@@ -4036,7 +4059,8 @@ arma::field<arma::mat> whole_chain_nbglmm_hybrid(const arma::rowvec &counts,
                                                  const double &n_sample,
                                                  const double &prior_sd_betas_a,
                                                  const double &prior_sd_betas_b,
-                                                 const int n_it){
+                                                 const int &n_it,
+                                                 const int &num_accept){
   int n_beta_tot = n_beta + n_beta_re, accepts = 0, i, inv_errors = 0;
   double a_rand_int_post = prior_sd_betas_a + n_beta_re / 2.0, b_rand_int_post;
   arma::field<arma::mat> ret(1, 5);
@@ -4083,7 +4107,8 @@ arma::field<arma::mat> whole_chain_nbglmm_hybrid(const arma::rowvec &counts,
                 rw_sd_rs,
                 n_beta_tot,
                 n_sample,
-                i);
+                i,
+                num_accept);
 
     b_rand_int_post = prior_sd_betas_b + arma::dot(beta_cur_re.t(), beta_cur_re.t()) / 2.0;
 
@@ -4104,6 +4129,7 @@ arma::field<arma::mat> whole_chain_nbglmm_hybrid(const arma::rowvec &counts,
                                                       n_sample,
                                                       accepts,
                                                       i,
+                                                      num_accept,
                                                       inv_errors));
     // Rcpp::Rcout << "Line 2966 check" << std::endl;
     betas_last = betas_cur;
@@ -4120,7 +4146,8 @@ arma::field<arma::mat> whole_chain_nbglmm_hybrid(const arma::rowvec &counts,
                 rw_sd_rs,
                 n_beta_tot,
                 n_sample,
-                i);
+                i,
+                num_accept);
     b_rand_int_post = prior_sd_betas_b + arma::dot(beta_cur_re.t(), beta_cur_re.t()) / 2.0;
     sigma2_sample(i) = 1.0 / (R::rgamma(a_rand_int_post, 1.0 / b_rand_int_post));
   }
@@ -4154,6 +4181,7 @@ struct whole_feature_sample_hybrid_struct : public Worker
   const double &prior_sd_betas_a;
   const double &prior_sd_betas_b;
   const int &n_it;
+  const int &num_accept;
 
   // density that I have accumulated
   arma::cube &upd_betas;
@@ -4179,6 +4207,7 @@ struct whole_feature_sample_hybrid_struct : public Worker
                                      const double &prior_sd_betas_a,
                                      const double &prior_sd_betas_b,
                                      const int &n_it,
+                                     const int &num_accept,
                                      arma::cube &upd_betas,
                                      arma::cube &upd_alphas,
                                      arma::cube &upd_sigmas,
@@ -4187,7 +4216,7 @@ struct whole_feature_sample_hybrid_struct : public Worker
     : counts(counts), log_offset(log_offset), starting_betas(starting_betas), design_mat(design_mat),
       mean_rhos(mean_rhos), prior_sd_rs(prior_sd_rs), rw_sd_rs(rw_sd_rs), prior_sd_betas(prior_sd_betas),
       rw_var_betas(rw_var_betas), n_beta(n_beta), n_beta_re(n_beta_re), n_sample(n_sample), prior_sd_betas_a(prior_sd_betas_a),
-      prior_sd_betas_b(prior_sd_betas_b), n_it(n_it), upd_betas(upd_betas), upd_alphas(upd_alphas),
+      prior_sd_betas_b(prior_sd_betas_b), n_it(n_it), num_accept(num_accept), upd_betas(upd_betas), upd_alphas(upd_alphas),
       upd_sigmas(upd_sigmas), upd_accepts(upd_accepts), upd_inv_errors(upd_inv_errors){}
 
   // arma::field<arma::mat> whole_chain_nbglmm(const arma::rowvec &counts,
@@ -4221,7 +4250,8 @@ struct whole_feature_sample_hybrid_struct : public Worker
                                                n_sample,
                                                prior_sd_betas_a,
                                                prior_sd_betas_b,
-                                               n_it);
+                                               n_it,
+                                               num_accept);
       // Rcpp::Rcout << "Line 3124 check" << std::endl;
       upd_betas.slice(i) = mcmc_res_tmp(0, 0);
       // Rcpp::Rcout << "Line 3126 check" << std::endl;
@@ -4251,7 +4281,8 @@ arma::field<arma::cube> mcmc_chain_hybrid_par(const arma::mat &counts,
                                               const int &n_sample,
                                               const double &prior_sd_betas_a,
                                               const double &prior_sd_betas_b,
-                                              const int &n_it){
+                                              const int &n_it,
+                                              const int &num_accept){
   arma::cube upd_betas(n_it, n_beta, counts.n_rows);
   arma::cube upd_alphas(n_it, counts.n_rows, 1);
   arma::cube upd_sigmas(n_it, counts.n_rows, 1);
@@ -4274,6 +4305,7 @@ arma::field<arma::cube> mcmc_chain_hybrid_par(const arma::mat &counts,
                                                prior_sd_betas_a,
                                                prior_sd_betas_b,
                                                n_it,
+                                               num_accept,
                                                upd_betas,
                                                upd_alphas,
                                                upd_sigmas,
@@ -4332,7 +4364,8 @@ Rcpp::List nbmm_mcmc_sampler_wls_hybrid(arma::mat counts,
                                         double rw_sd_rs,
                                         arma::vec log_offset,
                                         arma::mat starting_betas,
-                                        int grain_size = 1){
+                                        int grain_size = 1,
+                                        int num_accept = 50){
 
   arma::field<arma::cube> ret;
   arma::mat design_mat_tot = arma::join_rows(design_mat, design_mat_re);
@@ -4356,7 +4389,8 @@ Rcpp::List nbmm_mcmc_sampler_wls_hybrid(arma::mat counts,
                               n_sample,
                               prior_sd_betas_a,
                               prior_sd_betas_b,
-                              n_it);
+                              n_it,
+                              num_accept);
   // arma::field<arma::cube> mcmc_chain_par(const arma::mat &counts,
   //                                        const arma::vec &log_offset,
   //                                        const arma::mat &starting_betas,
@@ -4401,7 +4435,8 @@ arma::mat whole_chain_nbglmm2(const arma::rowvec &counts,
                               const double &n_sample,
                               const double &prior_sd_betas_a,
                               const double &prior_sd_betas_b,
-                              const int &n_it){
+                              const int &n_it,
+                              const int &num_accept){
   int n_beta_tot = n_beta + n_beta_re, i = 1, accepts = 0, inv_errors = 0;
   double a_rand_int_post = prior_sd_betas_a + n_beta_re / 2.0, b_rand_int_post;
   arma::mat ret(n_it, n_beta + 4, arma::fill::zeros);
@@ -4431,6 +4466,7 @@ arma::mat whole_chain_nbglmm2(const arma::rowvec &counts,
                                                       n_sample,
                                                       accepts,
                                                       i,
+                                                      num_accept,
                                                       inv_errors));
     betas_last = betas_cur;
     beta_cur_re = betas_cur.cols(n_beta, n_beta_tot - 1);
@@ -4445,7 +4481,8 @@ arma::mat whole_chain_nbglmm2(const arma::rowvec &counts,
                 rw_sd_rs,
                 n_beta_tot,
                 n_sample,
-                i);
+                i,
+                num_accept);
 
     b_rand_int_post = prior_sd_betas_b + arma::dot(beta_cur_re.t(), beta_cur_re.t()) / 2.0;
     sigma2_sample(i) = 1.0 / (R::rgamma(a_rand_int_post, 1.0 / b_rand_int_post));
@@ -4500,6 +4537,7 @@ struct whole_feature_sample_struct2 : public Worker
   const double &prior_sd_betas_a;
   const double &prior_sd_betas_b;
   const int &n_it;
+  const int &num_accept;
 
   // density that I have accumulated
   arma::cube &upd_param;
@@ -4519,11 +4557,12 @@ struct whole_feature_sample_struct2 : public Worker
                                const double &prior_sd_betas_a,
                                const double &prior_sd_betas_b,
                                const int &n_it,
+                               const int &num_accept,
                                arma::cube &upd_param)
     : counts(counts), log_offset(log_offset), starting_betas(starting_betas), design_mat(design_mat),
       mean_rhos(mean_rhos), prior_sd_rs(prior_sd_rs), rw_sd_rs(rw_sd_rs), prior_sd_betas(prior_sd_betas),
       n_beta(n_beta), n_beta_re(n_beta_re), n_sample(n_sample), prior_sd_betas_a(prior_sd_betas_a),
-      prior_sd_betas_b(prior_sd_betas_b), n_it(n_it), upd_param(upd_param){}
+      prior_sd_betas_b(prior_sd_betas_b), n_it(n_it), num_accept(num_accept), upd_param(upd_param){}
 
   // arma::field<arma::mat> whole_chain_nbglmm(const arma::rowvec &counts,
   //                                           const arma::vec &log_offset,
@@ -4555,7 +4594,8 @@ struct whole_feature_sample_struct2 : public Worker
                       n_sample,
                       prior_sd_betas_a,
                       prior_sd_betas_b,
-                      n_it);
+                      n_it,
+                      num_accept);
     }
   }
 
@@ -4574,7 +4614,8 @@ arma::cube mcmc_chain_par2(const arma::mat &counts,
                            const int &n_sample,
                            const double &prior_sd_betas_a,
                            const double &prior_sd_betas_b,
-                           const int &n_it){
+                           const int &n_it,
+                           const int &num_accept){
   arma::cube upd_param(n_it, n_beta + 4, counts.n_rows, arma::fill::zeros);
 
   whole_feature_sample_struct2 mcmc_inst(counts,
@@ -4591,6 +4632,7 @@ arma::cube mcmc_chain_par2(const arma::mat &counts,
                                          prior_sd_betas_a,
                                          prior_sd_betas_b,
                                          n_it,
+                                         num_accept,
                                          upd_param);
   parallelFor(0, counts.n_rows, mcmc_inst);
   // Rcpp::Rcout << "Line 3183 check" << std::endl;
@@ -4638,7 +4680,8 @@ Rcpp::List nbmm_mcmc_sampler_wls_force_fp2(arma::mat counts,
                                            double rw_sd_rs,
                                            arma::vec log_offset,
                                            arma::mat starting_betas,
-                                           int grain_size = 1){
+                                           int grain_size = 1,
+                                           int num_accept = 50){
 
   arma::cube ret;
   arma::mat design_mat_tot = arma::join_rows(design_mat, design_mat_re);
@@ -4660,7 +4703,8 @@ Rcpp::List nbmm_mcmc_sampler_wls_force_fp2(arma::mat counts,
                         n_sample,
                         prior_sd_betas_a,
                         prior_sd_betas_b,
-                        n_it);
+                        n_it,
+                        num_accept);
 
   // arma::vec inv_errors_ret(counts.n_rows);
   // inv_errors_ret = ret(0, 4).slice(0).col(0);
@@ -4982,7 +5026,7 @@ arma::mat whole_chain_nbglmm_rw2(const arma::rowvec &counts,
                                  const double &prior_sd_betas_a,
                                  const double &prior_sd_betas_b,
                                  const int n_it){
-  int n_beta_tot = n_beta + n_beta_re, accepts = 0, i;
+  int n_beta_tot = n_beta + n_beta_re, accepts = 0, i, num_accept = 0;
   double a_rand_int_post = prior_sd_betas_a + n_beta_re / 2.0, b_rand_int_post;
   arma::mat ret(n_it, n_beta + 3);
   arma::mat betas_sample(n_it, n_beta);
@@ -5028,7 +5072,8 @@ arma::mat whole_chain_nbglmm_rw2(const arma::rowvec &counts,
                 rw_sd_rs,
                 n_beta_tot,
                 n_sample,
-                i);
+                i,
+                num_accept);
     // Rcpp::Rcout << "Line 2994 check" << std::endl;
     b_rand_int_post = prior_sd_betas_b + arma::dot(beta_cur_re.t(), beta_cur_re.t()) / 2.0;
     // Rcpp::Rcout << "Line 3014 check" << std::endl;
@@ -6009,6 +6054,7 @@ arma::mat whole_chain_nbglmm_sum(const arma::rowvec &counts,
                                  const double &prior_sd_betas_a,
                                  const double &prior_sd_betas_b,
                                  const int &n_it,
+                                 const int &num_accept,
                                  const double &prop_burn){
   int n_beta_tot = n_beta + n_beta_re, i = 1, accepts = 0, inv_errors = 0;
   double a_rand_int_post = prior_sd_betas_a + n_beta_re / 2.0, b_rand_int_post;
@@ -6039,6 +6085,7 @@ arma::mat whole_chain_nbglmm_sum(const arma::rowvec &counts,
                                                       n_sample,
                                                       accepts,
                                                       i,
+                                                      num_accept,
                                                       inv_errors));
     betas_last = betas_cur;
     beta_cur_re = betas_cur.cols(n_beta, n_beta_tot - 1);
@@ -6053,7 +6100,8 @@ arma::mat whole_chain_nbglmm_sum(const arma::rowvec &counts,
                 rw_sd_rs,
                 n_beta_tot,
                 n_sample,
-                i);
+                i,
+                num_accept);
 
     b_rand_int_post = prior_sd_betas_b + arma::dot(beta_cur_re.t(), beta_cur_re.t()) / 2.0;
     sigma2_sample(i) = 1.0 / (R::rgamma(a_rand_int_post, 1.0 / b_rand_int_post));
@@ -6105,6 +6153,7 @@ struct whole_feature_sample_struct_sum : public Worker
   const double &prior_sd_betas_a;
   const double &prior_sd_betas_b;
   const int &n_it;
+  const int &num_accept;
   const double &prop_burn;
 
   // density that I have accumulated
@@ -6125,12 +6174,13 @@ struct whole_feature_sample_struct_sum : public Worker
                                   const double &prior_sd_betas_a,
                                   const double &prior_sd_betas_b,
                                   const int &n_it,
+                                  const int &num_accept,
                                   const double &prop_burn,
                                   arma::cube &upd_param)
     : counts(counts), log_offset(log_offset), starting_betas(starting_betas), design_mat(design_mat),
       mean_rhos(mean_rhos), prior_sd_rs(prior_sd_rs), rw_sd_rs(rw_sd_rs), prior_sd_betas(prior_sd_betas),
       n_beta(n_beta), n_beta_re(n_beta_re), n_sample(n_sample), prior_sd_betas_a(prior_sd_betas_a),
-      prior_sd_betas_b(prior_sd_betas_b), n_it(n_it), prop_burn(prop_burn), upd_param(upd_param){}
+      prior_sd_betas_b(prior_sd_betas_b), n_it(n_it), num_accept(num_accept), prop_burn(prop_burn), upd_param(upd_param){}
 
   // process just the elements of the range I've been asked to
   void operator()(std::size_t begin, std::size_t end) {
@@ -6149,6 +6199,7 @@ struct whole_feature_sample_struct_sum : public Worker
                       prior_sd_betas_a,
                       prior_sd_betas_b,
                       n_it,
+                      num_accept,
                       prop_burn);
     }
   }
@@ -6169,6 +6220,7 @@ arma::cube mcmc_chain_par_sum(const arma::mat &counts,
                               const double &prior_sd_betas_a,
                               const double &prior_sd_betas_b,
                               const int &n_it,
+                              const int &num_accept,
                               const double &prop_burn){
   arma::cube upd_param(n_beta, 9, counts.n_rows, arma::fill::zeros);
 
@@ -6186,6 +6238,7 @@ arma::cube mcmc_chain_par_sum(const arma::mat &counts,
                                             prior_sd_betas_a,
                                             prior_sd_betas_b,
                                             n_it,
+                                            num_accept,
                                             prop_burn,
                                             upd_param);
   parallelFor(0, counts.n_rows, mcmc_inst);
@@ -6236,7 +6289,8 @@ Rcpp::List nbmm_mcmc_sampler_wls_force_fp_sum(arma::mat counts,
                                               arma::vec log_offset,
                                               arma::mat starting_betas,
                                               double prop_burn_in = 0.10,
-                                              int grain_size = 1){
+                                              int grain_size = 1,
+                                              int num_accept = 50){
 
   arma::cube ret;
   arma::mat design_mat_tot = arma::join_rows(design_mat, design_mat_re);
@@ -6259,6 +6313,7 @@ Rcpp::List nbmm_mcmc_sampler_wls_force_fp_sum(arma::mat counts,
                            prior_sd_betas_a,
                            prior_sd_betas_b,
                            n_it,
+                           num_accept,
                            prop_burn_in);
 
   arma::cube betas_ret;
@@ -6585,6 +6640,7 @@ arma::mat whole_chain_nbglmm_sum_cont(const arma::rowvec &counts,
                                       const double &prior_sd_betas_a,
                                       const double &prior_sd_betas_b,
                                       const int &n_it,
+                                      const int &num_accept,
                                       const double &prop_burn){
   int n_beta_tot = n_beta + n_beta_re, i = 1, accepts = 0, inv_errors = 0, n_cont = contrast_mat.n_cols;
   double a_rand_int_post = prior_sd_betas_a + n_beta_re / 2.0, b_rand_int_post;
@@ -6615,6 +6671,7 @@ arma::mat whole_chain_nbglmm_sum_cont(const arma::rowvec &counts,
                                                       n_sample,
                                                       accepts,
                                                       i,
+                                                      num_accept,
                                                       inv_errors));
     betas_last = betas_cur;
     beta_cur_re = betas_cur.cols(n_beta, n_beta_tot - 1);
@@ -6629,7 +6686,8 @@ arma::mat whole_chain_nbglmm_sum_cont(const arma::rowvec &counts,
                 rw_sd_rs,
                 n_beta_tot,
                 n_sample,
-                i);
+                i,
+                num_accept);
 
     b_rand_int_post = prior_sd_betas_b + arma::dot(beta_cur_re.t(), beta_cur_re.t()) / 2.0;
     sigma2_sample(i) = 1.0 / (R::rgamma(a_rand_int_post, 1.0 / b_rand_int_post));
@@ -6684,6 +6742,7 @@ struct whole_feature_sample_struct_sum_cont : public Worker
   const double &prior_sd_betas_a;
   const double &prior_sd_betas_b;
   const int &n_it;
+  const int &num_accept;
   const double &prop_burn;
 
   // density that I have accumulated
@@ -6705,12 +6764,13 @@ struct whole_feature_sample_struct_sum_cont : public Worker
                                        const double &prior_sd_betas_a,
                                        const double &prior_sd_betas_b,
                                        const int &n_it,
+                                       const int &num_accept,
                                        const double &prop_burn,
                                        arma::cube &upd_param)
     : counts(counts), log_offset(log_offset), starting_betas(starting_betas), design_mat(design_mat),
       contrast_mat(contrast_mat), mean_rhos(mean_rhos), prior_sd_rs(prior_sd_rs), rw_sd_rs(rw_sd_rs),
       prior_sd_betas(prior_sd_betas), n_beta(n_beta), n_beta_re(n_beta_re), n_sample(n_sample),
-      prior_sd_betas_a(prior_sd_betas_a), prior_sd_betas_b(prior_sd_betas_b), n_it(n_it),
+      prior_sd_betas_a(prior_sd_betas_a), prior_sd_betas_b(prior_sd_betas_b), n_it(n_it), num_accept(num_accept),
       prop_burn(prop_burn), upd_param(upd_param){}
 
   // process just the elements of the range I've been asked to
@@ -6731,6 +6791,7 @@ struct whole_feature_sample_struct_sum_cont : public Worker
                       prior_sd_betas_a,
                       prior_sd_betas_b,
                       n_it,
+                      num_accept,
                       prop_burn);
     }
   }
@@ -6752,6 +6813,7 @@ arma::cube mcmc_chain_par_sum_cont(const arma::mat &counts,
                                    const double &prior_sd_betas_a,
                                    const double &prior_sd_betas_b,
                                    const int &n_it,
+                                   const int &num_accept,
                                    const double &prop_burn){
   int n_cont = contrast_mat.n_cols;
   arma::cube upd_param(n_beta + n_cont, 9, counts.n_rows, arma::fill::zeros);
@@ -6771,6 +6833,7 @@ arma::cube mcmc_chain_par_sum_cont(const arma::mat &counts,
                                                  prior_sd_betas_a,
                                                  prior_sd_betas_b,
                                                  n_it,
+                                                 num_accept,
                                                  prop_burn,
                                                  upd_param);
   parallelFor(0, counts.n_rows, mcmc_inst);
@@ -6822,7 +6885,8 @@ Rcpp::List nbmm_mcmc_sampler_wls_force_fp_sum_cont(arma::mat counts,
                                                    arma::vec log_offset,
                                                    arma::mat starting_betas,
                                                    double prop_burn_in = 0.10,
-                                                   int grain_size = 1){
+                                                   int grain_size = 1,
+                                                   int num_accept = 50){
 
   arma::cube ret;
   arma::mat design_mat_tot = arma::join_rows(design_mat, design_mat_re);
@@ -6835,7 +6899,7 @@ Rcpp::List nbmm_mcmc_sampler_wls_force_fp_sum_cont(arma::mat counts,
                                 log_offset,
                                 starting_betas2,
                                 design_mat_tot,
-                                contrast_mat,
+                                cont_mat_trans,
                                 prior_mean_log_rs,
                                 prior_sd_rs,
                                 rw_sd_rs,
@@ -6846,6 +6910,7 @@ Rcpp::List nbmm_mcmc_sampler_wls_force_fp_sum_cont(arma::mat counts,
                                 prior_sd_betas_a,
                                 prior_sd_betas_b,
                                 n_it,
+                                num_accept,
                                 prop_burn_in);
 
   arma::cube betas_ret;
