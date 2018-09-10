@@ -31,7 +31,8 @@ double dmvnrm_1f(const arma::vec &x,
   int xdim = x.n_elem;
   arma::mat rooti;
   arma::vec z;
-  double out, tmp;
+  double out;
+  double tmp;
   double rootisum, constants;
   constants = -(static_cast<double>(xdim)/2.0) * log2pi;
   arma::mat sigma_copy = sigma;
@@ -51,8 +52,9 @@ double dmvnrm_1f(const arma::vec &x,
   }
   rooti = arma::trans(arma::inv(trimatu(csigma)));
   rootisum = arma::sum(log(rooti.diag()));
-  z = rooti * arma::trans(x.t() - mean.t()) ;
+  z = rooti * arma::trans(x.t() - mean.t());
   tmp = constants - 0.5 * arma::sum(z%z) + rootisum;
+  out = exp(tmp);
   return(out);
 }
 
@@ -2804,7 +2806,7 @@ Rcpp::List nbmm_mcmc_sampler_wls_force(arma::mat counts,
                                        arma::mat starting_betas,
                                        bool return_all_re = true,
                                        int n_re_return = 1,
-                                       int num_accept = 50,
+                                       int num_accept = 20,
                                        int grain_size = 1){
   int i, j, n_beta = design_mat.n_cols, n_beta_re = design_mat_re.n_cols, n_feature = counts.n_rows,
     n_sample = counts.n_cols, n_beta_tot = n_beta + n_beta_re;
@@ -3433,7 +3435,7 @@ Rcpp::List nbmm_mcmc_sampler_wls_force_fp(arma::mat counts,
                                           arma::vec log_offset,
                                           arma::mat starting_betas,
                                           int grain_size = 1,
-                                          int num_accept = 50){
+                                          int num_accept = 20){
 
   arma::field<arma::cube> ret;
   arma::mat design_mat_tot = arma::join_rows(design_mat, design_mat_re);
@@ -4110,7 +4112,7 @@ Rcpp::List nbmm_mcmc_sampler_wls_hybrid(arma::mat counts,
                                         arma::vec log_offset,
                                         arma::mat starting_betas,
                                         int grain_size = 1,
-                                        int num_accept = 50){
+                                        int num_accept = 20){
 
   arma::field<arma::cube> ret;
   arma::mat design_mat_tot = arma::join_rows(design_mat, design_mat_re);
@@ -4382,7 +4384,7 @@ Rcpp::List nbmm_mcmc_sampler_wls_force_fp2(arma::mat counts,
                                            arma::vec log_offset,
                                            arma::mat starting_betas,
                                            int grain_size = 1,
-                                           int num_accept = 50){
+                                           int num_accept = 20){
 
   arma::cube ret;
   arma::mat design_mat_tot = arma::join_rows(design_mat, design_mat_re);
@@ -5964,7 +5966,7 @@ Rcpp::List nbmm_mcmc_sampler_wls_force_fp_sum(arma::mat counts,
                                               arma::mat starting_betas,
                                               double prop_burn_in = 0.10,
                                               int grain_size = 1,
-                                              int num_accept = 50){
+                                              int num_accept = 20){
 
   arma::cube ret;
   arma::mat design_mat_tot = arma::join_rows(design_mat, design_mat_re);
@@ -6556,7 +6558,7 @@ Rcpp::List nbmm_mcmc_sampler_wls_force_fp_sum_cont(arma::mat counts,
                                                    arma::mat starting_betas,
                                                    double prop_burn_in = 0.10,
                                                    int grain_size = 1,
-                                                   int num_accept = 50){
+                                                   int num_accept = 20){
 
   arma::cube ret;
   arma::mat design_mat_tot = arma::join_rows(design_mat, design_mat_re);
