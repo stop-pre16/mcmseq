@@ -727,27 +727,30 @@ nbglm_mcmc_fp_sum_cont <- function(counts, design_mat, contrast_mat, prior_sd_be
     .Call('_mcmseq_nbglm_mcmc_fp_sum_cont', PACKAGE = 'mcmseq', counts, design_mat, contrast_mat, prior_sd_betas, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, grain_size, burn_in_prop, VIF)
 }
 
-#' Negative Binomial GLMM MCMC WLS Force (full parallel chians)
+#' Negative Binomial GLMM fit for RNA-Seq expression using MCMC (contrast version)
 #'
-#' Run an MCMC for the Negative Binomial mixed model (short description, one or two sentences)
+#' Estimate Negative Binomial regressioin coefficients, dispersion parameter, and random intercept variance using MCMC with a weighted least squares proposal
 #'
-#' This is where you write details on the function...
+#' This function estimates regression parameters and ...
 #'
-#' more details....
 #'
-#' @param counts a matrix of counts
-#' @param design_mat design matrix for mean response
-#' @param design_mat_re design matrix for random intercepts
-#' @param prior_sd_betas prior std. dev. for regression coefficients
-#' @param prior_sd_betas_a alpha in inverse gamma prior for random intercept variance
-#' @param prior_sd_betas_b beta in inverse gamma prior for random intercept variance
-#' @param prior_sd_rs prior std. dev for dispersion parameters
-#' @param prior_mean_log_rs vector of prior means for dispersion parameters
-#' @param n_it number of iterations to run MCMC
-#' @param rw_sd_rs random wal std. dev. for proposing dispersion values
-#' @param log_offset vector of offsets on log scale
-#' @param prop_burn_in proportion of MCMC chain to discard as burn-in when computing summaries
+#'
+#' @param counts A numeric matrix of RNA-Seq counts (rows are genes, columns are samples)
+#' @param design_mat The fixed effects design matrix for mean response
+#' @param design_mat_re The design matrix for random intercepts
+#' @param contrast_mat A numeric matrix of linear contrasts of fixed effects to be tested.  Each row is considered to be an independent test, and each are done seperately
+#' @param prior_sd_betas Prior std. dev. in normal prior for regression coefficients
+#' @param prior_sd_betas_a Alpha parameter in inverse gamma prior for random intercept variance
+#' @param prior_sd_betas_b Beta parameter in inverse gamma prior for random intercept variance
+#' @param prior_sd_rs Prior std. dev in log-normal prior for dispersion parameters
+#' @param prior_mean_log_rs Vector of prior means for log of dispersion parameters
+#' @param rw_sd_rs Random walk std. dev. for proposing dispersion values (normal distribution centerd at current value)
+#' @param n_it Number of iterations to run MCMC
+#' @param log_offset Vector of offsets on log scale
+#' @param prop_burn_in Proportion of MCMC chain to discard as burn-in when computing summaries
 #' @param grain_size minimum size of parallel jobs, defaults to 1, can ignore for now
+#' @param starting_betas Numeric matrix of starting values for the regression coefficients.  For best results, supply starting values for at least the intercept (e.g. row means of counts matrix)
+#' @param num_accept Number of forced accepts of fixed and random effects at the beginning of the MCMC.  In practice forcing about 20 accepts (default value) prevents inverse errors at the start of chains and gives better mixing overall
 #'
 #' @author Brian Vestal
 #'
@@ -786,5 +789,106 @@ nbmm_mcmc_sampler_wls_force_fp_sum_cont <- function(counts, design_mat, design_m
 #' @export
 nbglm_mcmc_fp_sum_ovr <- function(counts, design_mat, prior_sd_betas, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, grain_size = 1L, burn_in_prop = .1, VIF = 1) {
     .Call('_mcmseq_nbglm_mcmc_fp_sum_ovr', PACKAGE = 'mcmseq', counts, design_mat, prior_sd_betas, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, grain_size, burn_in_prop, VIF)
+}
+
+#' Negative Binomial GLMM fit for RNA-Seq expression using MCMC (contrast version)
+#'
+#' Estimate Negative Binomial regressioin coefficients, dispersion parameter, and random intercept variance using MCMC with a weighted least squares proposal
+#'
+#' This function estimates regression parameters and ...
+#'
+#'
+#'
+#' @param counts A numeric matrix of RNA-Seq counts (rows are genes, columns are samples)
+#' @param design_mat The fixed effects design matrix for mean response
+#' @param design_mat_re The design matrix for random intercepts
+#' @param contrast_mat A numeric matrix of linear contrasts of fixed effects to be tested.  Each row is considered to be an independent test, and each are done seperately
+#' @param prior_sd_betas Prior std. dev. in normal prior for regression coefficients
+#' @param prior_sd_betas_a Alpha parameter in inverse gamma prior for random intercept variance
+#' @param prior_sd_betas_b Beta parameter in inverse gamma prior for random intercept variance
+#' @param prior_sd_rs Prior std. dev in log-normal prior for dispersion parameters
+#' @param prior_mean_log_rs Vector of prior means for log of dispersion parameters
+#' @param rw_sd_rs Random walk std. dev. for proposing dispersion values (normal distribution centerd at current value)
+#' @param n_it Number of iterations to run MCMC
+#' @param log_offset Vector of offsets on log scale
+#' @param prop_burn_in Proportion of MCMC chain to discard as burn-in when computing summaries
+#' @param grain_size minimum size of parallel jobs, defaults to 1, can ignore for now
+#' @param starting_betas Numeric matrix of starting values for the regression coefficients.  For best results, supply starting values for at least the intercept (e.g. row means of counts matrix)
+#' @param num_accept Number of forced accepts of fixed and random effects at the beginning of the MCMC.  In practice forcing about 20 accepts (default value) prevents inverse errors at the start of chains and gives better mixing overall
+#'
+#' @author Brian Vestal
+#'
+#' @return
+#' Returns a list with a cube of regression parameters, including random effects, a matrix of dispersion values, and a matrix of random intercept variances
+#'
+#' @export
+nbmm_mcmc_sampler_wls_force_fp_sum_cont_pb <- function(counts, design_mat, design_mat_re, contrast_mat, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, prop_burn_in = 0.10, grain_size = 1L, num_accept = 20L) {
+    .Call('_mcmseq_nbmm_mcmc_sampler_wls_force_fp_sum_cont_pb', PACKAGE = 'mcmseq', counts, design_mat, design_mat_re, contrast_mat, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, prop_burn_in, grain_size, num_accept)
+}
+
+#' Negative Binomial GLMM fit for RNA-Seq expression using MCMC (contrast version)
+#'
+#' Estimate Negative Binomial regressioin coefficients, dispersion parameter, and random intercept variance using MCMC with a weighted least squares proposal
+#'
+#' This function estimates regression parameters and ...
+#'
+#'
+#'
+#' @param counts A numeric matrix of RNA-Seq counts (rows are genes, columns are samples)
+#' @param design_mat The fixed effects design matrix for mean response
+#' @param design_mat_re The design matrix for random intercepts
+#' @param contrast_mat A numeric matrix of linear contrasts of fixed effects to be tested.  Each row is considered to be an independent test, and each are done seperately
+#' @param prior_sd_betas Prior std. dev. in normal prior for regression coefficients
+#' @param prior_sd_betas_a Alpha parameter in inverse gamma prior for random intercept variance
+#' @param prior_sd_betas_b Beta parameter in inverse gamma prior for random intercept variance
+#' @param prior_sd_rs Prior std. dev in log-normal prior for dispersion parameters
+#' @param prior_mean_log_rs Vector of prior means for log of dispersion parameters
+#' @param rw_sd_rs Random walk std. dev. for proposing dispersion values (normal distribution centerd at current value)
+#' @param n_it Number of iterations to run MCMC
+#' @param log_offset Vector of offsets on log scale
+#' @param prop_burn_in Proportion of MCMC chain to discard as burn-in when computing summaries
+#' @param grain_size minimum size of parallel jobs, defaults to 1, can ignore for now
+#' @param starting_betas Numeric matrix of starting values for the regression coefficients.  For best results, supply starting values for at least the intercept (e.g. row means of counts matrix)
+#' @param num_accept Number of forced accepts of fixed and random effects at the beginning of the MCMC.  In practice forcing about 20 accepts (default value) prevents inverse errors at the start of chains and gives better mixing overall
+#'
+#' @author Brian Vestal
+#'
+#' @return
+#' Returns a list with a cube of regression parameters, including random effects, a matrix of dispersion values, and a matrix of random intercept variances
+#'
+#' @export
+nbmm_mcmc_sampler_wls_force_fp_sum_cont_pb_nbf <- function(counts, design_mat, design_mat_re, contrast_mat, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, prop_burn_in = 0.10, grain_size = 1L, num_accept = 20L, abs_es = .05) {
+    .Call('_mcmseq_nbmm_mcmc_sampler_wls_force_fp_sum_cont_pb_nbf', PACKAGE = 'mcmseq', counts, design_mat, design_mat_re, contrast_mat, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, prop_burn_in, grain_size, num_accept, abs_es)
+}
+
+#' Negative Binomial GLMM MCMC WLS Force (full parallel chians)
+#'
+#' Run an MCMC for the Negative Binomial mixed model (short description, one or two sentences)
+#'
+#' This is where you write details on the function...
+#'
+#' more details....
+#'
+#' @param counts a matrix of counts
+#' @param design_mat design matrix for mean response
+#' @param design_mat_re design matrix for random intercepts
+#' @param prior_sd_betas prior std. dev. for regression coefficients
+#' @param prior_sd_betas_a alpha in inverse gamma prior for random intercept variance
+#' @param prior_sd_betas_b beta in inverse gamma prior for random intercept variance
+#' @param prior_sd_rs prior std. dev for dispersion parameters
+#' @param prior_mean_log_rs vector of prior means for dispersion parameters
+#' @param n_it number of iterations to run MCMC
+#' @param rw_sd_rs random wal std. dev. for proposing dispersion values
+#' @param log_offset vector of offsets on log scale
+#' @param grain_size minimum size of parallel jobs, defaults to 1, can ignore for now
+#'
+#' @author Brian Vestal
+#'
+#' @return
+#' Returns a list with a cube of regression parameters, including random effects, a matrix of dispersion values, and a matrix of random intercept variances
+#'
+#' @export
+nbmm_mcmc_sampler_wls_force_fp3 <- function(counts, design_mat, design_mat_re, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, grain_size = 1L, num_accept = 20L) {
+    .Call('_mcmseq_nbmm_mcmc_sampler_wls_force_fp3', PACKAGE = 'mcmseq', counts, design_mat, design_mat_re, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, grain_size, num_accept)
 }
 

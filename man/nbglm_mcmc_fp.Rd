@@ -25,6 +25,8 @@ nbglm_mcmc_fp(counts, design_mat, prior_sd_betas, prior_sd_rs,
 
 \item{log_offset}{vector of offsets on log scale}
 
+\item{starting_betas}{matrix of starting values for regression coefficients}
+
 \item{grain_size}{minimum size of parallel jobs, defaults to 1, can ignore for now}
 }
 \value{
