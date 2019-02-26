@@ -5,8 +5,8 @@
 \title{Negative Binomial GLM MCMC WLS (full parallel chians)}
 \usage{
 nbglm_mcmc_fp_sum_cont(counts, design_mat, contrast_mat, prior_sd_betas,
-  prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas,
-  grain_size = 1L, burn_in_prop = 0.1, VIF = 1)
+  prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset,
+  starting_betas, grain_size = 1L, burn_in_prop = 0.1, VIF = 1)
 }
 \arguments{
 \item{counts}{a matrix of counts}

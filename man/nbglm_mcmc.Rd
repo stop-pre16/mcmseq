@@ -4,8 +4,9 @@
 \alias{nbglm_mcmc}
 \title{Negative Binomial GLM MCMC (title)}
 \usage{
-nbglm_mcmc(counts, design_mat, prior_sd_betas, prior_sd_rs, prior_mean_log_rs,
-  n_it, rw_sd_betas, rw_sd_rs, log_offset, grain_size = 1L)
+nbglm_mcmc(counts, design_mat, prior_sd_betas, prior_sd_rs,
+  prior_mean_log_rs, n_it, rw_sd_betas, rw_sd_rs, log_offset,
+  grain_size = 1L)
 }
 \arguments{
 \item{counts}{a matrix of counts}
