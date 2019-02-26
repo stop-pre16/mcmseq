@@ -665,14 +665,6 @@ BEGIN_RCPP
 END_RCPP
 }
 
-RcppExport SEXP mcmseq_nbglm_mcmc(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
-RcppExport SEXP mcmseq_nbglm_mcmc_wls(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
-RcppExport SEXP mcmseq_nbglm_mcmc_wls_gam(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
-RcppExport SEXP mcmseq_nbmm_mcmc_sampler(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
-RcppExport SEXP mcmseq_nbmm_mcmc_sampler_wls(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
-RcppExport SEXP mcmseq_nbmm_mcmc_sampler_wls_gam(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
-RcppExport SEXP mcmseq_nbmm_mcmc_sampler_wls_split(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
-
 static const R_CallMethodDef CallEntries[] = {
     {"_mcmseq_nbglm_mcmc_fp", (DL_FUNC) &_mcmseq_nbglm_mcmc_fp, 10},
     {"_mcmseq_nbglm_mcmc", (DL_FUNC) &_mcmseq_nbglm_mcmc, 10},
@@ -703,13 +695,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_mcmseq_nbmm_mcmc_sampler_wls_force_fp_sum_cont_pb", (DL_FUNC) &_mcmseq_nbmm_mcmc_sampler_wls_force_fp_sum_cont_pb, 16},
     {"_mcmseq_nbmm_mcmc_sampler_wls_force_fp_sum_cont_pb_nbf", (DL_FUNC) &_mcmseq_nbmm_mcmc_sampler_wls_force_fp_sum_cont_pb_nbf, 17},
     {"_mcmseq_nbmm_mcmc_sampler_wls_force_fp3", (DL_FUNC) &_mcmseq_nbmm_mcmc_sampler_wls_force_fp3, 14},
-    {"mcmseq_nbglm_mcmc",                                      (DL_FUNC) &mcmseq_nbglm_mcmc,                                      10},
-    {"mcmseq_nbglm_mcmc_wls",                                  (DL_FUNC) &mcmseq_nbglm_mcmc_wls,                                  10},
-    {"mcmseq_nbglm_mcmc_wls_gam",                              (DL_FUNC) &mcmseq_nbglm_mcmc_wls_gam,                              11},
-    {"mcmseq_nbmm_mcmc_sampler",                               (DL_FUNC) &mcmseq_nbmm_mcmc_sampler,                               14},
-    {"mcmseq_nbmm_mcmc_sampler_wls",                           (DL_FUNC) &mcmseq_nbmm_mcmc_sampler_wls,                           15},
-    {"mcmseq_nbmm_mcmc_sampler_wls_gam",                       (DL_FUNC) &mcmseq_nbmm_mcmc_sampler_wls_gam,                       16},
-    {"mcmseq_nbmm_mcmc_sampler_wls_split",                     (DL_FUNC) &mcmseq_nbmm_mcmc_sampler_wls_split,                     15},
     {NULL, NULL, 0}
 };
 
