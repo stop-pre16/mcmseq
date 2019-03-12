@@ -24,7 +24,8 @@
 mcmseq.summarize <- function(mcmseqModel, # mcmseq object fit using mcmseq.fit
                              summarizeWhat="coefficient", #character string indicating what to summarize:"coefficient" to summarize fixed effect coefficients or "contrast" to summarize contrasts
                              which = 1,  # character string or numeric indicator of which coefficient or contrast to summarize
-                             prop.accepts=0.1, # proportion of proposals accepted in order for model to be considered converged.  Default is 10% or 0.1.
+                             prop.accepts.coef=c(0.1,1), # range of acceptance rates for regression coefficients where model is considered converged.
+                             prop.accepts.dispersion = c(0.1, 0.7), # range of acceptance rates for dispersion parameters where model is considered converged.
                              order_by=NULL, # character string indicating which variable to order the results table by:
                              #       "posterior_median": order by posterior median
                              #                           (default decreasing order);
@@ -52,7 +53,10 @@ mcmseq.summarize <- function(mcmseqModel, # mcmseq object fit using mcmseq.fit
   geneNames<-mcmseqModel$gene_names
 
   # Calculate number of accepts to filter out
-  #accepts = prop.accepts*mcmseqModel$n_it
+  accepts.lower = prop.accepts.coef[1]*mcmseqModel$n_it
+  accepts.upper = prop.accepts.coef[2]*mcmseqModel$n_it
+  accepts.lower.disp = prop.accepts.dispersion[1]*mcmseqModel$n_it
+  accepts.upper.disp = prop.accepts.dispersion[2]*mcmseqModel$n_it
 
   #Pull coefficients or contrasts based on summarizeWhat argument (Error if argument doesn't match)
   if(summarizeWhat=="contrast"){
@@ -65,7 +69,10 @@ mcmseq.summarize <- function(mcmseqModel, # mcmseq object fit using mcmseq.fit
 
   #Get index numbers for genes with big enough number of accepts
   #Filter out genes without big enough # of accepts from gene names and data array
-  accepts_filtered<-which(mcmseqModel$accepts>=accepts)
+  accepts_filtered<-which(mcmseqModel$accepts_betas>=accepts.lower &
+                            mcmseqModel$accepts_betas<=accepts.upper &
+                            mcmseqModel$accepts_alphas>=accepts.lower.disp &
+                            mcmseqModel$accepts_alphas<=accepts.upper.disp)
   geneNames_filtered<-geneNames[accepts_filtered]
   data_matrix_filtered<-data_matrix[,accepts_filtered]
 
@@ -88,7 +95,7 @@ mcmseq.summarize <- function(mcmseqModel, # mcmseq object fit using mcmseq.fit
     element_full_results$posterior_median_abs=log2(exp(element_full_results$posterior_median_abs))
     element_full_results$posterior_SD=log2(exp(element_full_results$posterior_SD))
   } else if(!is.logical(log2)){
-    stop("gt must be logical")
+    stop("log2 must be logical")
   }
 
   #If there is a filter value, needs to be a filter by value
@@ -111,6 +118,7 @@ mcmseq.summarize <- function(mcmseqModel, # mcmseq object fit using mcmseq.fit
   ###Option to choose which direction to filter (greater than or less than)?
 
   element_sig_results<-element_full_results
+  if(length(filter_by)>0){
   for( x in 1:length(filter_by)){
     if(!(filter_by[x] %in% c(colnames(element_sig_results)))){
       stop('invalid filter_by argument')
@@ -132,7 +140,7 @@ mcmseq.summarize <- function(mcmseqModel, # mcmseq object fit using mcmseq.fit
             element_sig_results[,filter_by[x]]<filter_val[x],]
         }
       }
-  }
+  }}
 
 
 

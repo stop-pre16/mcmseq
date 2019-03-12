@@ -44,16 +44,23 @@ where $M_g$ is a vector of length $p$ containing the prior means for the fixed e
 ## An Example MCMSeq Analysis Using Default Priors
 We will perform an analysis on a simulated dataset.  The data is included as part of the mcmseq package and includes simulated expression count data on 6 subjects (ids 1 to 6): 3 control subjects (group = 0) and 3 treatment subjects (group = 1).  All subjects are measured at 2 timepoints, baseline (time = 0) and follow-up (time = 1).  1,000 genes are included in the dataset, 200 of which were simulated to have changes in expression from baseline to follow up in the treatment group only. First load the data:
 ```{r}
+# Load the mcmseq library
+library(mcmseq)
+
 # Load the data
-load(simdata)
+data("simdata")
 class(simdata)
 names(simdata)
 
-# Look at the metadata to see the study design
+# metadata has information about the the study design
+# each row is a sample and corresponds to a column
+# in the counts matrix
 metadata <- simdata$metadata
 metadata
 
-# Look at the counts matrix
+# The counts matrix has the same number of columns as
+# rows in metadata.  The columns of the counts matrix
+# are in the same order as the rows of the metadata.
 counts <- simdata$counts
 head(counts)
 
@@ -62,8 +69,15 @@ length(simdata$de)
 ```
 The goal of our analysis will be to compare changes over time between the control and treatment groups.  We will fit the following model to the data:
 
-The fixed effect portion of the model is specified as a formula:
-
+\begin{eqnarray}
+ \label{eq:sim_data}
+Y_{gij} &\sim& \mathcal{NB}(\mu_{gij}, \alpha_g) \nonumber \\
+\log(\mu_{gij}) &=& \beta_{g0} + \beta_{g1} I_{T_i} + \beta_{g2} I_{F_{ij}} +  \\
+			&&	\beta_{g3}I_{T_i} I_{F_{ij}} + b_{gi} + \rho_{ij} \nonumber \\
+b_{gi} &\sim& \mathcal{N}(0, \sigma_{gb}^2) \nonumber
+\end{eqnarray}
+ where $I_{T_i}$ is an indicator function that equals 1 if subject $i$ is in the treatment group, $I_{F_{ij}}$ is a similar indicator for if observation $j$ is the follow-up, $b_{gi}$ is the random intercept for gene $g$ and subject $i$ and $\rho_{ij}$ is an offset for subject $i$ at observation $j$ to account for differences in sequencing depth.   
+ 
 ```{r}
 # Create the fixed effects model formula
 f <- ~ group*time
@@ -75,12 +89,22 @@ We include default values for all proir and hyperprior parameters.  For our defa
 
 We believe that these are reasonable prior choices for a variety of problems; however, all of these parameters can be specified by the user to tailor priors to a particular problem or dataset.
 
+### Choice of Proposal Distributions
+By default fixed and random effect regression coefficients are updated using a Metropolis Hastings step with a weighted least squares proposal, as described by Gammerman (YEAR).  We have extensively tested this proposal for use in negative binomial mixed models and negative binomial regression models. Typically acceptance rates for this type of proposal are quite high. In pratice, we consider features that have > 10\% accepts to have converged in terms of the fixed and random effect coefficients. However, if acceptance rates are low, we offer a random walk proposal,  which can tried for features that do not converge using the WLS proposal. A random walk proposal can be chosen by changing proposal_method = 'wls' to proposal_method = 'rw' in the mcmseq.fit function.  If proposal_method = 'rw', then a "step size" or standard deviation for the random walk proposal distribution must be selected (rw_sd_betas). This parameter may need to be tuned in order to achieve appropriate mixing and acceptance probabilities.
+
+Similarly, the dispersion parameters are also updated using a random walk proposal with a standard deviation of rw_sd_log_alpha.  This parameter may need to be tuned in order to achieve appropriate mixing and acceptance probabilities.
+
+For random walk proposals, acceptance rates around 23\% are considered optimal.  In practice, we filter out features that have acceptance probabilities less than 10\% and greater than 70\% accepts for random walk proposals.  If many features have acceptance rates outside these limits, you should consider changing rw_sd_log_alpha (or rw_sd_betas for coefficients).  To increase acceptance rates, reduce the value of rw_sd_log_alpha.  To decrease acceptance rates increase rw_sd_log_alpha.  Before running mcmseq on your full dataset, you may want to do a test run with a small number of features (1,000) and adjust random walk standard deviations as needed. 
+
+
 ### Accounting for Differences in Sequencing Depth
 As a default, an offset is included to account for sequencing depth.  We calculate the offset for subject $i$ at observation $j$ as $\rho_{ij} = \frac{Q^{75}_{ij}}{\text{median}_{rs} (Q^{75}_{rs})}$, where $Q^{75}_{ij}$ is the 75$^{th}$ percentile of counts across genes for subject $i$ at observation $j$.  Other choices might include the total library size for an observation, the median of ratios method from DESeq2 or the trimmed mean of M values from EdgeR.
 
 ### Setting Up Contrasts
 In addition, we are interested in the following contrasts or linear combinations of regression paramters:
+- $\beta_{g1} + \beta_{g3} = 0$ tests for differences in expression between the treatment and the control group at follow-up
 
+- $\beta_{g2} + \beta_{g3} = 0$ tests for a change in expression over time in the treatment group
 
 The mcmseq fitting function allows users to specify custom contrasts or linear combinations of the fixed effects regression coefficients for testing through the contrast_mat argument.  The contrast matrix must have the same number of columns as fixed effects and each row corresponds to a different contrast to test.  In addition, the user can specify contrasts names either by naming the rows of the contrast matrix of by supplying a character vector of contrast names to the contrast_names argument.  
 
@@ -123,7 +147,7 @@ class(fit.default)
 names(fit.default)
 ```
 
-The resulting mcmseq object is a list.  Elements 6-22 of the list provide information about the user supplied and/or default settings used to fit the model.  "betas_est" is a 3 dimensional array (number of fixed effects x 4 x number of genes), which contains the posterior median, standard deviation, Bayes factor, and raw pseudo p-value for each regression coefficient for each gene.  Similarly, "contrast_est" is a 3 dimensional array (number contrasts x 4 x number of genes), containing the same information for each contrast. "alphas_est" contains the dispersion parameters for each gene, and  "sig2_est" contains the random intercept variance for each gene.  "accepts" contains the number of iterations where a proposal was accepted, which provides information about the mixing of the chain. If the chain does not have an appropirate acceptance rate, then the chain for that gene may not be adequately converged to make inference (See section XXX).   
+The resulting mcmseq object is a list.  Elements 7-23 of the list provide information about the user supplied and/or default settings used to fit the model.  "betas_est" is a 3 dimensional array (number of fixed effects x 4 x number of genes), which contains the posterior median, standard deviation, Bayes factor, and raw pseudo p-value for each regression coefficient for each gene.  Similarly, "contrast_est" is a 3 dimensional array (number contrasts x 4 x number of genes), containing the same information for each contrast. "alphas_est" contains the dispersion parameters for each gene, and  "sig2_est" contains the random intercept variance for each gene.  "accepts_betas" contains the number of iterations where a proposal for the regression coefficients was accepted, which provides information about the mixing of the chain. Similarly, "accepts_alphas" provides the number of accepts for updates of the dispersion parameter. If the chain does not have an appropirate acceptance rate, then the chain for that gene may not be adequately converged to make inference (See section XXX).   
 ```{r}
 # See regression coefficient estimates for the first gene
 fit.default$betas_est[,,1]
@@ -133,8 +157,15 @@ fit.default$contrast_est[,,1]
 
 # See the dispersion and random intercept variance estimates for the
 # first 10 genes
-fit.default$alphas_est[,1:10]
-fit.default$sig2_est[,1:10]
+fit.default$alphas_est[1:10]
+fit.default$sig2_est[1:10]
+
+# Calculate and check acceptance rates for the first 10 features
+# Dispersion accepts
+fit.default$accepts_alphas[1:10]/fit.default$n_it
+
+# Coefficient accepts
+fit.default$accepts_betas[1:10]/fit.default$n_it
 ```
 
 
@@ -150,7 +181,8 @@ Importantly, the mcmseq.summarize function also filters out genes that have low 
 c1_table <- mcmseq.summarize(mcmseqModel = fit.default, 
                  summarizeWhat="contrast",  
                  which = "Treatment_v_Control_at_FollowUp",  
-                 prop.accepts=0.1, 
+                 prop.accepts.coef = c(0.1,1), 
+                 prop.accepts.dispersion  = c(0.1,0.7),
                   log2=TRUE 
             )
 
@@ -163,7 +195,8 @@ head(c1_table)
 c1_table_filtered <- mcmseq.summarize(mcmseqModel = fit.default, 
                  summarizeWhat="contrast",  
                  which = "Treatment_v_Control_at_FollowUp",  
-                 prop.accepts=0.1, 
+                 prop.accepts.coef = c(0.1,1), 
+                 prop.accepts.dispersion  = c(0.1,0.7),
                  order_by = "BH_adjusted_pval", 
                  decreasing = FALSE,
                  filter_by = c("BH_adjusted_pval", "posterior_median_abs"),
@@ -181,7 +214,8 @@ head(c1_table_filtered)
 group_table_filtered <- mcmseq.summarize(mcmseqModel = fit.default, 
                  summarizeWhat="coefficient",  
                  which = "group",  
-                 prop.accepts=0.1, 
+                 prop.accepts.coef = c(0.1,1), 
+                 prop.accepts.dispersion  = c(0.1,0.7),
                  order_by = "BH_adjusted_pval", 
                  decreasing = FALSE,
                  filter_by = c("BH_adjusted_pval", "posterior_median_abs"),
@@ -197,6 +231,27 @@ head(c1_table_filtered)
 ```
 
 ## What if the acceptance probability is low for a gene?
+You can determine which genes were filtered from results due to low acceptance probabilites by looking at the number of accepts.  In our example above no genes were filtered due to acceptance rates.  Below we determine which genes are outside of a more narrow acceptance range:
+```{r}
+# Create a more narrow acceptance range
+limits.dispersion <- c(0.15, 0.45)
+limits.betas <- c(0.3, 0.9)
+
+# Determine which genes are outside the dispersion accept range
+disp.id <- which( (fit.default$accepts_alphas/fit.default$n_it) < limits.dispersion[1] |
+         (fit.default$accepts_alphas/fit.default$n_it) > limits.dispersion[2])
+
+head(fit.default$gene_names[disp.id])
+
+# Coefficient accepts
+beta.id <- which( (fit.default$accepts_betas/fit.default$n_it) < limits.betas[1] |
+         (fit.default$accepts_betas/fit.default$n_it) > limits.betas[2])
+
+head(fit.default$gene_names[beta.id])
+
+```
+If features fail due to the dispersion paramter, try adjusting XXX and re-running mcmseq on the subset of genes that failed. If features fail due to the regression coefficients, try using a random walk proposal for the coefficients instead of the WLS method.
+
 
 ## An Example MCMSeq Analysis Using Custom Priors: Sharing Information Across Genes
 
