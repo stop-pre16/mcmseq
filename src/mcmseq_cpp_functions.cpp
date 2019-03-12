@@ -549,7 +549,8 @@ double update_rho(const arma::rowvec &beta_cur,
                   const double &prior_sd_rs,
                   const double &rw_sd_rs,
                   const int &n_beta,
-                  const int &n_sample){
+                  const int &n_sample,
+                  int &n_accept){
   arma::vec mean_cur(n_sample);
   double ll_prop, ll_cur, mh_prop, mh_cur, rho_prop, rho_cur = 1.0 / alpha_cur, alpha_prop;
 
@@ -566,6 +567,7 @@ double update_rho(const arma::rowvec &beta_cur,
 
   //if((R::runif(0, 1) < exp(mh_prop - mh_cur)) && 1 < 0){
   if(R::runif(0, 1) < exp(mh_prop - mh_cur)){
+    n_accept++;
     return alpha_prop;
   }
   else{
@@ -582,7 +584,8 @@ double update_rho_hc(const arma::rowvec &beta_cur,
                      const double &prior_sd_rs,
                      const double &rw_sd_rs,
                      const int &n_beta,
-                     const int &n_sample){
+                     const int &n_sample,
+                     int &n_accept){
   arma::vec mean_cur(n_sample);
   double ll_prop, ll_cur, mh_prop, mh_cur, rho_prop, rho_cur = 1.0 / alpha_cur, alpha_prop;
   double tau = 20;
@@ -602,6 +605,7 @@ double update_rho_hc(const arma::rowvec &beta_cur,
 
   //if((R::runif(0, 1) < exp(mh_prop - mh_cur)) && 1 < 0){
   if(R::runif(0, 1) < exp(mh_prop - mh_cur)){
+    n_accept++;
     return alpha_prop;
   }
   else{
@@ -623,7 +627,8 @@ double update_rho_force(const arma::rowvec &beta_cur,
                         const int &n_beta,
                         const int &n_sample,
                         const int &it_num,
-                        const int &num_accept){
+                        const int &num_accept,
+                        int &n_accept){
   arma::vec mean_cur(n_sample);
   double ll_prop, ll_cur, mh_prop, mh_cur, rho_prop, rho_cur = 1.0 / alpha_cur, alpha_prop;
 
@@ -639,6 +644,7 @@ double update_rho_force(const arma::rowvec &beta_cur,
   mh_prop = ll_prop + R::dnorm4(log(alpha_prop), mean_alpha_cur, prior_sd_rs, 1);
 
   if((R::runif(0, 1) < exp(mh_prop - mh_cur)) && it_num > num_accept){
+    n_accept++;
     return alpha_prop;
   }
   else{
@@ -660,7 +666,8 @@ double update_rho_force_hc(const arma::rowvec &beta_cur,
                            const int &n_beta,
                            const int &n_sample,
                            const int &it_num,
-                           const int &num_accept){
+                           const int &num_accept,
+                           int &n_accept){
   arma::vec mean_cur(n_sample);
   double ll_prop, ll_cur, mh_prop, mh_cur, rho_prop, rho_cur = 1.0 / alpha_cur, alpha_prop;
   double tau = 20;
@@ -675,10 +682,11 @@ double update_rho_force_hc(const arma::rowvec &beta_cur,
   // mh_cur = ll_cur + R::dnorm4(log(alpha_cur), mean_alpha_cur, prior_sd_rs, 1);
   // mh_prop = ll_prop + R::dnorm4(log(alpha_prop), mean_alpha_cur, prior_sd_rs, 1);
 
-  mh_cur = ll_cur + half_cauchy_pdf(alpha_cur, tau);
-  mh_prop = ll_prop + half_cauchy_pdf(alpha_prop, tau);
+  mh_cur = ll_cur + log(half_cauchy_pdf(alpha_cur, tau));
+  mh_prop = ll_prop + log(half_cauchy_pdf(alpha_prop, tau));
 
   if((R::runif(0, 1) < exp(mh_prop - mh_cur)) && it_num > num_accept){
+    n_accept++;
     return alpha_prop;
   }
   else{
@@ -712,11 +720,11 @@ arma::mat whole_chain_nbglm_rw(const arma::rowvec &counts,
                                const int n_it,
                                const double &prop_burn,
                                const bool &return_cont){
-  int n_beta_tot = n_beta, accepts = 0, i, num_accept = 0, n_cont = 0;
+  int n_beta_tot = n_beta, accepts = 0, accepts_alpha = 0, i, num_accept = 0, n_cont = 0;
   if(return_cont){
     n_cont = contrast_mat.n_cols;
   }
-  arma::mat ret(n_beta + n_cont, 8, arma::fill::zeros), contrast_sample(n_it, n_cont);
+  arma::mat ret(n_beta + n_cont, 9, arma::fill::zeros), contrast_sample(n_it, n_cont);
   arma::mat betas_sample(n_it, n_beta);
   arma::rowvec betas_cur(n_beta_tot), betas_last(n_beta_tot);
   arma::vec disp_sample(n_it);
@@ -757,7 +765,8 @@ arma::mat whole_chain_nbglm_rw(const arma::rowvec &counts,
                 n_beta_tot,
                 n_sample,
                 i,
-                num_accept);
+                num_accept,
+                accepts_alpha);
   }
 
   int burn_bound = round(n_it * prop_burn);
@@ -772,6 +781,7 @@ arma::mat whole_chain_nbglm_rw(const arma::rowvec &counts,
   ret.col(1) = arma::trans(arma::stddev(betas_sample.rows(burn_bound, n_it - 1), 0));
   ret(0, 6) = arma::median(disp_sample.rows(burn_bound, n_it - 1));
   ret(0, 7) = accepts;
+  ret(0, 8) = accepts_alpha;
   for(int k = 0; k < n_beta + n_cont; k++){
     ret(k, 2) = R::dnorm4(0, ret(k, 0), ret(k, 1), 0) / R::dnorm4(0, 0, prior_sd_betas, 0);
     sd_smooth = 1.06 * ret(k, 1) * pow(n_it_double - n_burn_in, -0.20);
@@ -869,7 +879,7 @@ arma::cube mcmc_chain_glm_rw_par(const arma::mat &counts,
   if(return_cont){
     n_cont = contrast_mat.n_cols;
   }
-  arma::cube upd_param(n_beta + n_cont, 8, counts.n_rows, arma::fill::zeros);
+  arma::cube upd_param(n_beta + n_cont, 9, counts.n_rows, arma::fill::zeros);
 
   whole_feature_sample_rw_struct_glm mcmc_inst(counts,
                                                log_offset,
@@ -970,6 +980,7 @@ Rcpp::List nbglm_mcmc_rw(arma::mat counts,
   arma::cube contrast_ret;
   arma::mat disp_ret, sigma2_ret;
   arma::vec accepts_ret;
+  arma::vec accepts_ret_alpha;
 
   betas_ret = ret.tube(arma::span(0, n_beta - 1), arma::span(0, 5));
   Rcpp::NumericVector betas_ret2;
@@ -980,6 +991,7 @@ Rcpp::List nbglm_mcmc_rw(arma::mat counts,
   Rcpp::rownames(betas_ret2) = beta_names;
   disp_ret = ret.tube(0, 6);
   accepts_ret = ret.tube(0, 7);
+  accepts_ret_alpha = ret.tube(0, 8);
 
   if(return_cont){
     contrast_ret = ret.tube(arma::span(n_beta, n_beta + n_cont - 1), arma::span(0, 5));
@@ -990,12 +1002,14 @@ Rcpp::List nbglm_mcmc_rw(arma::mat counts,
     return Rcpp::List::create(Rcpp::Named("betas_est") = betas_ret2,
                               Rcpp::Named("contrast_est") = contrast_ret2,
                               Rcpp::Named("alphas_est") = disp_ret,
-                              Rcpp::Named("accepts") = accepts_ret);
+                              Rcpp::Named("accepts_betas") = accepts_ret,
+                              Rcpp::Named("accepts_alphas") = accepts_ret_alpha);
   }
   else{
     return Rcpp::List::create(Rcpp::Named("betas_est") = betas_ret2,
                               Rcpp::Named("alphas_est") = disp_ret,
-                              Rcpp::Named("accepts") = accepts_ret);
+                              Rcpp::Named("accepts") = accepts_ret,
+                              Rcpp::Named("accepts_alphas") = accepts_ret_alpha);
   }
 
 }
@@ -1035,12 +1049,12 @@ arma::mat whole_chain_nbglmm_rw2(const arma::rowvec &counts,
                                  const int n_it,
                                  const double &prop_burn,
                                  const bool &return_cont){
-  int n_beta_tot = n_beta + n_beta_re, accepts = 0, i, num_accept = 0, n_cont = 0;
+  int n_beta_tot = n_beta + n_beta_re, accepts = 0, accepts_alpha = 0, i, num_accept = 0, n_cont = 0;
   double a_rand_int_post = prior_sd_betas_a + n_beta_re / 2.0, b_rand_int_post;
   if(return_cont){
     n_cont = contrast_mat.n_cols;
   }
-  arma::mat ret(n_beta + n_cont, 9, arma::fill::zeros), contrast_sample(n_it, n_cont);
+  arma::mat ret(n_beta + n_cont, 10, arma::fill::zeros), contrast_sample(n_it, n_cont);
   arma::mat betas_sample(n_it, n_beta);
   arma::rowvec betas_cur(n_beta_tot), beta_cur_re(n_beta_re), betas_last(n_beta_tot);
   arma::vec disp_sample(n_it), sigma2_sample(n_it);
@@ -1085,7 +1099,8 @@ arma::mat whole_chain_nbglmm_rw2(const arma::rowvec &counts,
                 n_beta_tot,
                 n_sample,
                 i,
-                num_accept);
+                num_accept,
+                accepts_alpha);
     b_rand_int_post = prior_sd_betas_b + arma::dot(beta_cur_re.t(), beta_cur_re.t()) / 2.0;
     sigma2_sample(i) = 1.0 / (R::rgamma(a_rand_int_post, 1.0 / b_rand_int_post));
   }
@@ -1103,6 +1118,7 @@ arma::mat whole_chain_nbglmm_rw2(const arma::rowvec &counts,
   ret(0, 6) = arma::median(disp_sample.rows(burn_bound, n_it - 1));
   ret(0, 7) = arma::median(sigma2_sample.rows(burn_bound, n_it - 1));
   ret(0, 8) = accepts;
+  ret(0, 9) = accepts_alpha;
   for(int k = 0; k < n_beta + n_cont; k++){
     ret(k, 2) = R::dnorm4(0, ret(k, 0), ret(k, 1), 0) / R::dnorm4(0, 0, prior_sd_betas, 0);
     sd_smooth = 1.06 * ret(k, 1) * pow(n_it_double - n_burn_in, -0.20);
@@ -1214,7 +1230,7 @@ arma::cube mcmc_chain_rw_par2(const arma::mat &counts,
   if(return_cont){
     n_cont = contrast_mat.n_cols;
   }
-  arma::cube upd_param(n_beta + n_cont, 9, counts.n_rows, arma::fill::zeros);
+  arma::cube upd_param(n_beta + n_cont, 10, counts.n_rows, arma::fill::zeros);
 
   whole_feature_sample_rw_struct2 mcmc_inst(counts,
                                             log_offset,
@@ -1324,6 +1340,7 @@ Rcpp::List nbglmm_mcmc_rw(arma::mat counts,
   arma::cube contrast_ret;
   arma::mat disp_ret, sigma2_ret;
   arma::vec accepts_ret;
+  arma::vec accepts_ret_alpha;
 
   betas_ret = ret.tube(arma::span(0, n_beta - 1), arma::span(0, 5));
   Rcpp::NumericVector betas_ret2;
@@ -1335,6 +1352,7 @@ Rcpp::List nbglmm_mcmc_rw(arma::mat counts,
   disp_ret = ret.tube(0, 6);
   sigma2_ret = ret.tube(0, 7);
   accepts_ret = ret.tube(0, 8);
+  accepts_ret_alpha = ret.tube(0, 9);
 
   if(return_cont){
     contrast_ret = ret.tube(arma::span(n_beta, n_beta + n_cont - 1), arma::span(0, 5));
@@ -1346,13 +1364,15 @@ Rcpp::List nbglmm_mcmc_rw(arma::mat counts,
                               Rcpp::Named("contrast_est") = contrast_ret2,
                               Rcpp::Named("alphas_est") = disp_ret,
                               Rcpp::Named("sig2_est") = sigma2_ret,
-                              Rcpp::Named("accepts") = accepts_ret);
+                              Rcpp::Named("accepts_betas") = accepts_ret,
+                              Rcpp::Named("accepts_alphas") = accepts_ret_alpha);
   }
   else{
     return Rcpp::List::create(Rcpp::Named("betas_est") = betas_ret2,
                               Rcpp::Named("alphas_est") = disp_ret,
                               Rcpp::Named("sig2_est") = sigma2_ret,
-                              Rcpp::Named("accepts") = accepts_ret);
+                              Rcpp::Named("accepts_betas") = accepts_ret,
+                              Rcpp::Named("accepts_alphas") = accepts_ret_alpha);
   }
 
 }
@@ -1384,13 +1404,13 @@ arma::mat whole_chain_nbglm_sum_cont(const arma::rowvec &counts,
                                      const int n_it,
                                      const double &prop_burn,
                                      const bool &return_cont){
-  int i = 1, accepts = 0, inv_errors = 0, n_cont = 0;
+  int i = 1, accepts = 0, accepts_alphas = 0, inv_errors = 0, n_cont = 0;
   if(return_cont){
     n_cont = contrast_mat.n_cols;
   }
   double VIF = 1;
   //arma::mat ret(n_it, n_beta + 3, arma::fill::zeros);
-  arma::mat ret(n_beta + n_cont, 8, arma::fill::zeros);
+  arma::mat ret(n_beta + n_cont, 9, arma::fill::zeros);
   arma::mat betas_sample(n_it, n_beta), contrast_sample(n_it, n_cont);
   arma::rowvec betas_cur(n_beta), betas_last(n_beta);
   arma::vec disp_sample(n_it);
@@ -1434,7 +1454,8 @@ arma::mat whole_chain_nbglm_sum_cont(const arma::rowvec &counts,
                 prior_sd_rs,
                 rw_sd_rs,
                 n_beta,
-                n_sample);
+                n_sample,
+                accepts_alphas);
     i++;
   }
   if(inv_errors > 0){
@@ -1456,6 +1477,7 @@ arma::mat whole_chain_nbglm_sum_cont(const arma::rowvec &counts,
   ret.col(1) = arma::trans(arma::stddev(betas_sample.rows(burn_bound, n_it - 1), 0));
   ret(0, 6) = arma::mean(disp_sample.rows(burn_bound, n_it - 1));
   ret(0, 7) = accepts;
+  ret(0, 8) = accepts_alphas;
   for(int k = 0; k < n_beta + n_cont; k++){
     ret(k, 2) = R::dnorm4(0, ret(k, 0), ret(k, 1), 0) / R::dnorm4(0, 0, prior_sd_betas, 0);
     sd_smooth = 1.06 * ret(k, 1) * pow(n_it_double - n_burn_in, -0.20);
@@ -1550,7 +1572,7 @@ arma::cube mcmc_chain_glm_sum_cont_par(const arma::mat &counts,
   if(return_cont){
     n_cont = contrast_mat.n_cols;
   }
-  arma::cube upd_param(n_beta + n_cont, 8, counts.n_rows, arma::fill::zeros);
+  arma::cube upd_param(n_beta + n_cont, 9, counts.n_rows, arma::fill::zeros);
 
   whole_feature_sample_struct_glm_sum_cont mcmc_inst(counts,
                                                      log_offset,
@@ -1644,10 +1666,12 @@ Rcpp::List nbglm_mcmc_wls(arma::mat counts,
   arma::cube contrast_ret;
   arma::mat disp_ret;
   arma::vec accepts_ret;
+  arma::vec accepts_ret_alphas;
 
   betas_ret = ret.tube(arma::span(0, n_beta - 1), arma::span(0, 5));
   disp_ret = ret.tube(0, 6);
   accepts_ret = ret.tube(0, 7);
+  accepts_ret_alphas = ret.tube(0, 8);
   //inv_errors_ret = ret.tube(0, n_beta+2);
 
   Rcpp::NumericVector betas_ret2;
@@ -1666,12 +1690,14 @@ Rcpp::List nbglm_mcmc_wls(arma::mat counts,
     return Rcpp::List::create(Rcpp::Named("betas_est") = betas_ret2,
                               Rcpp::Named("contrast_est") = contrast_ret2,
                               Rcpp::Named("alphas_est") = disp_ret,
-                              Rcpp::Named("accepts") = accepts_ret);
+                              Rcpp::Named("accepts_betas") = accepts_ret,
+                              Rcpp::Named("accepts_alphas") = accepts_ret_alphas);
   }
   else{
     return Rcpp::List::create(Rcpp::Named("betas_est") = betas_ret2,
                               Rcpp::Named("alphas_est") = disp_ret,
-                              Rcpp::Named("accepts") = accepts_ret);
+                              Rcpp::Named("accepts_betas") = accepts_ret,
+                              Rcpp::Named("accepts_alphas") = accepts_ret_alphas);
   }
 
 }
@@ -1725,8 +1751,8 @@ double update_sigma2_rw_hc(const double &sigma2_cur,
   pdf_vals_prop = arma::normpdf(rand_int_vec, 0, sigma_prop);
   ll_cur = arma::sum(arma::log(pdf_vals_cur));
   ll_prop = arma::sum(arma::log(pdf_vals_prop));
-  mh_cur = ll_cur + half_cauchy_pdf(sigma_cur, tau);
-  mh_prop = ll_prop + half_cauchy_pdf(sigma_prop, tau);
+  mh_cur = ll_cur + log(half_cauchy_pdf(sigma_cur, tau));
+  mh_prop = ll_prop + log(half_cauchy_pdf(sigma_prop, tau));
   // mh_cur = ll_cur;
   // mh_prop = ll_prop;
   if((R::runif(0, 1) < exp(mh_prop - mh_cur))){
@@ -1757,13 +1783,13 @@ arma::mat whole_chain_nbglmm_sum_cont_pb(const arma::rowvec &counts,
                                          const int &num_accept,
                                          const double &prop_burn,
                                          const bool &return_cont){
-  int n_beta_tot = n_beta + n_beta_re, i = 1, accepts = 0, inv_errors = 0, n_cont = 0;
+  int n_beta_tot = n_beta + n_beta_re, i = 1, accepts = 0, accepts_alphas = 0, inv_errors = 0, n_cont = 0;
   if(return_cont){
     n_cont = contrast_mat.n_cols;
   }
   arma::mat contrast_sample;
   double a_rand_int_post = prior_sd_betas_a + n_beta_re / 2.0, b_rand_int_post;
-  arma::mat ret(n_beta + n_cont, 9, arma::fill::zeros);
+  arma::mat ret(n_beta + n_cont, 10, arma::fill::zeros);
   arma::mat betas_sample(n_it, n_beta);
   arma::rowvec betas_cur(n_beta_tot), beta_cur_re(n_beta_re), betas_last(n_beta_tot);
   arma::vec disp_sample(n_it), sigma2_sample(n_it);
@@ -1806,7 +1832,8 @@ arma::mat whole_chain_nbglmm_sum_cont_pb(const arma::rowvec &counts,
                 n_beta_tot,
                 n_sample,
                 i,
-                num_accept);
+                num_accept,
+                accepts_alphas);
 
     b_rand_int_post = prior_sd_betas_b + arma::dot(beta_cur_re.t(), beta_cur_re.t()) / 2.0;
     sigma2_sample(i) = 1.0 / (R::rgamma(a_rand_int_post, 1.0 / b_rand_int_post));
@@ -1832,6 +1859,7 @@ arma::mat whole_chain_nbglmm_sum_cont_pb(const arma::rowvec &counts,
   ret(0, 6) = arma::median(disp_sample.rows(burn_bound, n_it - 1));
   ret(0, 7) = arma::median(sigma2_sample.rows(burn_bound, n_it - 1));
   ret(0, 8) = accepts;
+  ret(0, 9) = accepts_alphas;
   for(int k = 0; k < n_beta + n_cont; k++){
     ret(k, 2) = R::dnorm4(0, ret(k, 0), ret(k, 1), 0) / R::dnorm4(0, 0, prior_sd_betas, 0);
     sd_smooth = 1.06 * ret(k, 1) * pow(n_it_double - n_burn_in, -0.20);
@@ -1942,7 +1970,7 @@ arma::cube mcmc_chain_par_sum_cont_pb(const arma::mat &counts,
   if(return_cont){
     n_cont = contrast_mat.n_cols;
   }
-  arma::cube upd_param(n_beta + n_cont, 9, counts.n_rows, arma::fill::zeros);
+  arma::cube upd_param(n_beta + n_cont, 10, counts.n_rows, arma::fill::zeros);
   whole_feature_sample_struct_sum_cont_pb mcmc_inst(counts,
                                                     log_offset,
                                                     starting_betas,
@@ -2053,6 +2081,7 @@ Rcpp::List nbglmm_mcmc_wls(arma::mat counts,
   arma::cube contrast_ret;
   arma::mat disp_ret, sigma2_ret;
   arma::vec accepts_ret;
+  arma::vec accepts_ret_alphas;
 
   betas_ret = ret.tube(arma::span(0, n_beta - 1), arma::span(0, 5));
   Rcpp::NumericVector betas_ret2;
@@ -2064,6 +2093,7 @@ Rcpp::List nbglmm_mcmc_wls(arma::mat counts,
   disp_ret = ret.tube(0, 6);
   sigma2_ret = ret.tube(0, 7);
   accepts_ret = ret.tube(0, 8);
+  accepts_ret_alphas = ret.tube(0, 9);
 
   if(return_cont){
     contrast_ret = ret.tube(arma::span(n_beta, n_beta + n_cont - 1), arma::span(0, 5));
@@ -2076,13 +2106,15 @@ Rcpp::List nbglmm_mcmc_wls(arma::mat counts,
                               Rcpp::Named("contrast_est") = contrast_ret2,
                               Rcpp::Named("alphas_est") = disp_ret,
                               Rcpp::Named("sig2_est") = sigma2_ret,
-                              Rcpp::Named("accepts") = accepts_ret);
+                              Rcpp::Named("accepts_betas") = accepts_ret,
+                              Rcpp::Named("accepts_alphas") = accepts_ret_alphas);
   }
   else{
     return Rcpp::List::create(Rcpp::Named("betas_est") = betas_ret2,
                               Rcpp::Named("alphas_est") = disp_ret,
                               Rcpp::Named("sig2_est") = sigma2_ret,
-                              Rcpp::Named("accepts") = accepts_ret);
+                              Rcpp::Named("accepts_betas") = accepts_ret,
+                              Rcpp::Named("accepts_alphas") = accepts_ret_alphas);
   }
 }
 
@@ -2119,13 +2151,13 @@ arma::mat whole_chain_nbglmm_sum_cont_pb2(const arma::rowvec &counts,
                                           const double &prop_burn,
                                           const bool &return_cont,
                                           const double &rw_sd_sigma){
-  int n_beta_tot = n_beta + n_beta_re, i = 1, accepts = 0, inv_errors = 0, n_cont = 0;
+  int n_beta_tot = n_beta + n_beta_re, i = 1, accepts = 0, accepts_alpha = 0, inv_errors = 0, n_cont = 0;
   if(return_cont){
     n_cont = contrast_mat.n_cols;
   }
   arma::mat contrast_sample;
   //double a_rand_int_post = prior_sd_betas_a + n_beta_re / 2.0, b_rand_int_post;
-  arma::mat ret(n_beta + n_cont, 9, arma::fill::zeros);
+  arma::mat ret(n_beta + n_cont, 10, arma::fill::zeros);
   arma::mat betas_sample(n_it, n_beta);
   arma::rowvec betas_cur(n_beta_tot), beta_cur_re(n_beta_re), betas_last(n_beta_tot);
   arma::vec disp_sample(n_it), sigma2_sample(n_it);
@@ -2168,7 +2200,8 @@ arma::mat whole_chain_nbglmm_sum_cont_pb2(const arma::rowvec &counts,
                 n_beta_tot,
                 n_sample,
                 i,
-                num_accept);
+                num_accept,
+                accepts_alpha);
 
     //b_rand_int_post = prior_sd_betas_b + arma::dot(beta_cur_re.t(), beta_cur_re.t()) / 2.0;
     //sigma2_sample(i) = 1.0 / (R::rgamma(a_rand_int_post, 1.0 / b_rand_int_post));
@@ -2195,6 +2228,7 @@ arma::mat whole_chain_nbglmm_sum_cont_pb2(const arma::rowvec &counts,
   ret(0, 6) = arma::median(disp_sample.rows(burn_bound, n_it - 1));
   ret(0, 7) = arma::median(sigma2_sample.rows(burn_bound, n_it - 1));
   ret(0, 8) = accepts;
+  ret(0, 9) = accepts_alpha;
   for(int k = 0; k < n_beta + n_cont; k++){
     ret(k, 2) = R::dnorm4(0, ret(k, 0), ret(k, 1), 0) / R::dnorm4(0, 0, prior_sd_betas, 0);
     sd_smooth = 1.06 * ret(k, 1) * pow(n_it_double - n_burn_in, -0.20);
@@ -2309,7 +2343,7 @@ arma::cube mcmc_chain_par_sum_cont_pb2(const arma::mat &counts,
   if(return_cont){
     n_cont = contrast_mat.n_cols;
   }
-  arma::cube upd_param(n_beta + n_cont, 9, counts.n_rows, arma::fill::zeros);
+  arma::cube upd_param(n_beta + n_cont, 10, counts.n_rows, arma::fill::zeros);
   whole_feature_sample_struct_sum_cont_pb2 mcmc_inst(counts,
                                                      log_offset,
                                                      starting_betas,
@@ -2423,6 +2457,7 @@ Rcpp::List nbglmm_mcmc_wls2(arma::mat counts,
   arma::cube contrast_ret;
   arma::mat disp_ret, sigma2_ret;
   arma::vec accepts_ret;
+  arma::vec accepts_ret_alpha;
 
   betas_ret = ret.tube(arma::span(0, n_beta - 1), arma::span(0, 5));
   Rcpp::NumericVector betas_ret2;
@@ -2434,6 +2469,7 @@ Rcpp::List nbglmm_mcmc_wls2(arma::mat counts,
   disp_ret = ret.tube(0, 6);
   sigma2_ret = ret.tube(0, 7);
   accepts_ret = ret.tube(0, 8);
+  accepts_ret_alpha = ret.tube(0, 9);
 
   if(return_cont){
     contrast_ret = ret.tube(arma::span(n_beta, n_beta + n_cont - 1), arma::span(0, 5));
@@ -2446,13 +2482,15 @@ Rcpp::List nbglmm_mcmc_wls2(arma::mat counts,
                               Rcpp::Named("contrast_est") = contrast_ret2,
                               Rcpp::Named("alphas_est") = disp_ret,
                               Rcpp::Named("sig2_est") = sigma2_ret,
-                              Rcpp::Named("accepts") = accepts_ret);
+                              Rcpp::Named("accepts_betas") = accepts_ret,
+                              Rcpp::Named("accepts_alphas") = accepts_ret_alpha);
   }
   else{
     return Rcpp::List::create(Rcpp::Named("betas_est") = betas_ret2,
                               Rcpp::Named("alphas_est") = disp_ret,
                               Rcpp::Named("sig2_est") = sigma2_ret,
-                              Rcpp::Named("accepts") = accepts_ret);
+                              Rcpp::Named("accepts_betas") = accepts_ret,
+                              Rcpp::Named("accepts_alphas") = accepts_ret_alpha);
   }
 }
 
@@ -2490,13 +2528,13 @@ arma::mat whole_chain_nbglmm_sum_cont_pb3(const arma::rowvec &counts,
                                           const bool &return_cont,
                                           const double &rw_sd_sigma,
                                           const double &tau){
-  int n_beta_tot = n_beta + n_beta_re, i = 1, accepts = 0, inv_errors = 0, n_cont = 0;
+  int n_beta_tot = n_beta + n_beta_re, i = 1, accepts = 0, accepts_alpha = 0, inv_errors = 0, n_cont = 0;
   if(return_cont){
     n_cont = contrast_mat.n_cols;
   }
   arma::mat contrast_sample;
   //double a_rand_int_post = prior_sd_betas_a + n_beta_re / 2.0, b_rand_int_post;
-  arma::mat ret(n_beta + n_cont, 9, arma::fill::zeros);
+  arma::mat ret(n_beta + n_cont, 10, arma::fill::zeros);
   arma::mat betas_sample(n_it, n_beta);
   arma::rowvec betas_cur(n_beta_tot), beta_cur_re(n_beta_re), betas_last(n_beta_tot);
   arma::vec disp_sample(n_it), sigma2_sample(n_it);
@@ -2539,7 +2577,8 @@ arma::mat whole_chain_nbglmm_sum_cont_pb3(const arma::rowvec &counts,
                 n_beta_tot,
                 n_sample,
                 i,
-                num_accept);
+                num_accept,
+                accepts_alpha);
 
     //b_rand_int_post = prior_sd_betas_b + arma::dot(beta_cur_re.t(), beta_cur_re.t()) / 2.0;
     //sigma2_sample(i) = 1.0 / (R::rgamma(a_rand_int_post, 1.0 / b_rand_int_post));
@@ -2566,6 +2605,7 @@ arma::mat whole_chain_nbglmm_sum_cont_pb3(const arma::rowvec &counts,
   ret(0, 6) = arma::median(disp_sample.rows(burn_bound, n_it - 1));
   ret(0, 7) = arma::median(sigma2_sample.rows(burn_bound, n_it - 1));
   ret(0, 8) = accepts;
+  ret(0, 9) = accepts_alpha;
   for(int k = 0; k < n_beta + n_cont; k++){
     ret(k, 2) = R::dnorm4(0, ret(k, 0), ret(k, 1), 0) / R::dnorm4(0, 0, prior_sd_betas, 0);
     sd_smooth = 1.06 * ret(k, 1) * pow(n_it_double - n_burn_in, -0.20);
@@ -2685,7 +2725,7 @@ arma::cube mcmc_chain_par_sum_cont_pb3(const arma::mat &counts,
   if(return_cont){
     n_cont = contrast_mat.n_cols;
   }
-  arma::cube upd_param(n_beta + n_cont, 9, counts.n_rows, arma::fill::zeros);
+  arma::cube upd_param(n_beta + n_cont, 10, counts.n_rows, arma::fill::zeros);
   whole_feature_sample_struct_sum_cont_pb3 mcmc_inst(counts,
                                                      log_offset,
                                                      starting_betas,
@@ -2802,6 +2842,7 @@ Rcpp::List nbglmm_mcmc_wls3(arma::mat counts,
   arma::cube contrast_ret;
   arma::mat disp_ret, sigma2_ret;
   arma::vec accepts_ret;
+  arma::vec accepts_ret_alpha;
 
   betas_ret = ret.tube(arma::span(0, n_beta - 1), arma::span(0, 5));
   Rcpp::NumericVector betas_ret2;
@@ -2813,6 +2854,7 @@ Rcpp::List nbglmm_mcmc_wls3(arma::mat counts,
   disp_ret = ret.tube(0, 6);
   sigma2_ret = ret.tube(0, 7);
   accepts_ret = ret.tube(0, 8);
+  accepts_ret_alpha = ret.tube(0, 9);
 
   if(return_cont){
     contrast_ret = ret.tube(arma::span(n_beta, n_beta + n_cont - 1), arma::span(0, 5));
@@ -2825,13 +2867,15 @@ Rcpp::List nbglmm_mcmc_wls3(arma::mat counts,
                               Rcpp::Named("contrast_est") = contrast_ret2,
                               Rcpp::Named("alphas_est") = disp_ret,
                               Rcpp::Named("sig2_est") = sigma2_ret,
-                              Rcpp::Named("accepts") = accepts_ret);
+                              Rcpp::Named("accepts_betas") = accepts_ret,
+                              Rcpp::Named("accepts_alphas") = accepts_ret_alpha);
   }
   else{
     return Rcpp::List::create(Rcpp::Named("betas_est") = betas_ret2,
                               Rcpp::Named("alphas_est") = disp_ret,
                               Rcpp::Named("sig2_est") = sigma2_ret,
-                              Rcpp::Named("accepts") = accepts_ret);
+                              Rcpp::Named("accepts_betas") = accepts_ret,
+                              Rcpp::Named("accepts_alphas") = accepts_ret_alpha);
   }
 }
 
@@ -2868,13 +2912,13 @@ arma::mat whole_chain_nbglmm_sum_cont_pb4(const arma::rowvec &counts,
                                           const bool &return_cont,
                                           const double &rw_sd_sigma,
                                           const double &tau){
-  int n_beta_tot = n_beta + n_beta_re, i = 1, accepts = 0, inv_errors = 0, n_cont = 0;
+  int n_beta_tot = n_beta + n_beta_re, i = 1, accepts = 0, accepts_alpha = 0, inv_errors = 0, n_cont = 0;
   if(return_cont){
     n_cont = contrast_mat.n_cols;
   }
   arma::mat contrast_sample;
   //double a_rand_int_post = prior_sd_betas_a + n_beta_re / 2.0, b_rand_int_post;
-  arma::mat ret(n_beta + n_cont, 9, arma::fill::zeros);
+  arma::mat ret(n_beta + n_cont, 10, arma::fill::zeros);
   arma::mat betas_sample(n_it, n_beta);
   arma::rowvec betas_cur(n_beta_tot), beta_cur_re(n_beta_re), betas_last(n_beta_tot);
   arma::vec disp_sample(n_it), sigma2_sample(n_it);
@@ -2917,7 +2961,8 @@ arma::mat whole_chain_nbglmm_sum_cont_pb4(const arma::rowvec &counts,
                 n_beta_tot,
                 n_sample,
                 i,
-                num_accept);
+                num_accept,
+                accepts_alpha);
 
     //b_rand_int_post = prior_sd_betas_b + arma::dot(beta_cur_re.t(), beta_cur_re.t()) / 2.0;
     //sigma2_sample(i) = 1.0 / (R::rgamma(a_rand_int_post, 1.0 / b_rand_int_post));
@@ -2932,9 +2977,11 @@ arma::mat whole_chain_nbglmm_sum_cont_pb4(const arma::rowvec &counts,
   }
 
   int burn_bound = round(n_it * prop_burn);
-  double n_it_double = n_it, n_burn_in = n_it_double * prop_burn, sd_smooth;
+  double n_it_double = n_it, n_burn_in = n_it_double * prop_burn, sd_smooth, cp_pdf_0;
   arma::uvec idx_ops;
   arma::vec pdf_vals;
+  arma::uvec idx_less;
+  arma::vec pdf_vals_cp;
   if(return_cont){
     contrast_sample = betas_sample * contrast_mat;
     betas_sample = arma::join_rows(betas_sample, contrast_sample);
@@ -2944,14 +2991,19 @@ arma::mat whole_chain_nbglmm_sum_cont_pb4(const arma::rowvec &counts,
   ret(0, 6) = arma::median(disp_sample.rows(burn_bound, n_it - 1));
   ret(0, 7) = arma::median(sigma2_sample.rows(burn_bound, n_it - 1));
   ret(0, 8) = accepts;
+  ret(0, 9) = accepts_alpha;
   for(int k = 0; k < n_beta + n_cont; k++){
     ret(k, 2) = R::dnorm4(0, ret(k, 0), ret(k, 1), 0) / R::dnorm4(0, 0, prior_sd_betas, 0);
     sd_smooth = 1.06 * ret(k, 1) * pow(n_it_double - n_burn_in, -0.20);
     pdf_vals = arma::normpdf(betas_sample.rows(burn_bound, n_it - 1).col(k), 0, sd_smooth);
     ret(k, 3) = arma::mean(pdf_vals) / R::dnorm4(0, 0, prior_sd_betas, 0);
-    ret(k, 4) = 2.0 * R::pnorm5(0, fabs(ret(k, 0)), ret(k, 1), 1, 0);
+    //ret(k, 4) = 2.0 * R::pnorm5(0, fabs(ret(k, 0)), ret(k, 1), 1, 0);
     idx_ops = arma::find((ret(k, 0) * betas_sample.rows(burn_bound, n_it - 1).col(k)) < 0);
     ret(k, 5) = (2.0 * idx_ops.n_elem) / (n_it_double - n_burn_in);
+    pdf_vals_cp = arma::normpdf(betas_sample.rows(burn_bound, n_it - 1).col(k), ret(k, 0), ret(k, 1));
+    cp_pdf_0 = R::dnorm4(0, ret(k, 0), ret(k, 1), 0);
+    idx_less = arma::find(pdf_vals_cp < cp_pdf_0);
+    ret(k, 4) = (1.0 * idx_less.n_elem) / (n_it_double - n_burn_in);
   }
   return(ret);
 }
@@ -3063,7 +3115,7 @@ arma::cube mcmc_chain_par_sum_cont_pb4(const arma::mat &counts,
   if(return_cont){
     n_cont = contrast_mat.n_cols;
   }
-  arma::cube upd_param(n_beta + n_cont, 9, counts.n_rows, arma::fill::zeros);
+  arma::cube upd_param(n_beta + n_cont, 10, counts.n_rows, arma::fill::zeros);
   whole_feature_sample_struct_sum_cont_pb4 mcmc_inst(counts,
                                                      log_offset,
                                                      starting_betas,
@@ -3180,6 +3232,7 @@ Rcpp::List nbglmm_mcmc_wls4(arma::mat counts,
   arma::cube contrast_ret;
   arma::mat disp_ret, sigma2_ret;
   arma::vec accepts_ret;
+  arma::vec accepts_ret_alpha;
 
   betas_ret = ret.tube(arma::span(0, n_beta - 1), arma::span(0, 5));
   Rcpp::NumericVector betas_ret2;
@@ -3191,6 +3244,7 @@ Rcpp::List nbglmm_mcmc_wls4(arma::mat counts,
   disp_ret = ret.tube(0, 6);
   sigma2_ret = ret.tube(0, 7);
   accepts_ret = ret.tube(0, 8);
+  accepts_ret_alpha = ret.tube(0, 9);
 
   if(return_cont){
     contrast_ret = ret.tube(arma::span(n_beta, n_beta + n_cont - 1), arma::span(0, 5));
@@ -3203,13 +3257,15 @@ Rcpp::List nbglmm_mcmc_wls4(arma::mat counts,
                               Rcpp::Named("contrast_est") = contrast_ret2,
                               Rcpp::Named("alphas_est") = disp_ret,
                               Rcpp::Named("sig2_est") = sigma2_ret,
-                              Rcpp::Named("accepts") = accepts_ret);
+                              Rcpp::Named("accepts_betas") = accepts_ret,
+                              Rcpp::Named("accepts_alphas") = accepts_ret_alpha);
   }
   else{
     return Rcpp::List::create(Rcpp::Named("betas_est") = betas_ret2,
                               Rcpp::Named("alphas_est") = disp_ret,
                               Rcpp::Named("sig2_est") = sigma2_ret,
-                              Rcpp::Named("accepts") = accepts_ret);
+                              Rcpp::Named("accepts_betas") = accepts_ret,
+                              Rcpp::Named("accepts_alphas") = accepts_ret_alpha);
   }
 }
 
