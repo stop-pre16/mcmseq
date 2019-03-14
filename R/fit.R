@@ -16,12 +16,16 @@
 #' @param prior_v_re_var V parameter in inverse gamma prior for random intercept variance.  Default is 0.01.
 #' @param prior_sd_log_alpha Standard deviation in the log-normal prior for dispersion parameters.  Default is 7.
 #' @param prior_mean_log_alpha Vector of prior means for log of dispersion parameters.  If a single value is provided (rather than a vector), the same value will be used for all genes. Default is -ln(2) for all genes.
-#' @param n_it Number of MCMC iterations.  Default is 30,000.
+#' @param n_it Number of MCMC iterations.  Default is 1,000.
 #' @param rw_sd_log_alpha Standard deviation for the random walk proposal for dispersion values (normal distribution centerd at current value)
 #' @param starting_betas Numeric matrix of starting values for the regression coefficients. For best results, supply starting values for at least the intercept (e.g. row means of counts matrix)
 #' @param rw_sd_betas Standard deviation for the random walk proposal for regression coefficients.  Only used for propsal_method = 'rw'.  Default is 0.5.
 #' @param prop_burn_in Number between 0 and 1 indicating the proportion of MCMC chain to discard as burn-in.  Default is 0.1.
 #' @param num_accept Number of forced accepts of fixed and random effects at the beginning of the MCMC. In practice forcing about 20 accepts (default value) prevents inverse errors at the start of chains and gives better mixing overall.  This value must be less than or equal to the number of burn-in iterations.
+#' @param prop.accepts.betas minimum acceptance rate for regression coefficients to be considered converged. Default is 0.1.
+#' @param prop.accepts.alphas minimum acceptance rate for dispersion parameters to be considered converged.. Default is 0.1.
+#' @param geweke.p minimum Geweke p-value for a paramter to be considered converged.
+
 #' #'
 #' @return An MCMSeq Object
 #'
@@ -50,8 +54,11 @@ mcmseq.fit <- function(counts=NULL, # matrix of RNA-Seq counts where rows are ge
                        starting_betas = NULL,#Numeric matrix of starting values for the regression coefficients. For best results, supply starting values for at least the intercept (e.g. row means of counts matrix)
                        rw_sd_betas = 0.5, # random walk std. dev. for proposing beta values
                        prop_burn_in = 0.1, #Proportion of MCMC chain to discard as burn-in when computing summaries
-                       num_accept = 20L #Number of forced accepts of fixed and random effects at the beginning of the MCMC. In practice forcing about 20 accepts (default value) prevents inverse errors at the start of chains and gives better mixing overall
-){
+                       num_accept = 20L, #Number of forced accepts of fixed and random effects at the beginning of the MCMC. In practice forcing about 20 accepts (default value) prevents inverse errors at the start of chains and gives better mixing overall
+                       prop.accepts.betas=c(0.1), #minimum acceptance rate for regression coefficients to be considered converged. Default is 0.1.
+                       prop.accepts.alphas = c(0.1), # minimum acceptance rate for dispersions to be considered converged. Default is 0.1.
+                       geweke.p = 0.05#minimum Geweke p-value for a paramter to be considered converged.
+                       ){
 
   # For now set grain_size to default; Brian may remove this later.
   grain_size = 1L
@@ -323,7 +330,7 @@ mcmseq.fit <- function(counts=NULL, # matrix of RNA-Seq counts where rows are ge
                                   beta_names = fixed_effect_names
     )
     }
-
+    colnames(ret$geweke_all) <- c(fixed_effect_names, "sig2", "alphas")
 
   }else{#do GLM
     if(proposal_method == 'rw'){ ret <- nbglm_mcmc_rw(counts = counts,
@@ -362,7 +369,7 @@ mcmseq.fit <- function(counts=NULL, # matrix of RNA-Seq counts where rows are ge
                                  cont_names = contrast_names,
                                  beta_names = fixed_effect_names
     )}
-
+    colnames(ret$geweke_all) <- c(fixed_effect_names, "alphas")
   }
   ret$gene_names = gene_names
   ret$n_it = n_it
@@ -383,5 +390,11 @@ mcmseq.fit <- function(counts=NULL, # matrix of RNA-Seq counts where rows are ge
   ret$rw_sd_betas = rw_sd_betas
   ret$prop_burn_in = prop_burn_in
   ret$num_accept = num_accept
+  ret$convergence_failures <- mcmseq.covergence(mcmseqModel = ret,
+                              prop.accepts.betas=prop.accepts.betas,
+                              prop.accepts.alphas = prop.accepts.alphas,
+                              geweke.p = geweke.p
+  )
+
   return(ret)
 }

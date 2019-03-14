@@ -5,7 +5,9 @@
 #' @param mcmseqModel mcmseq object fit using mcmseq.fit
 #' @param summarizeWhat character string indicating what to summarize:"coefficient" to summarize fixed effect coefficients or "contrast" to summarize contrasts
 #' @param which character string or numeric indicator of which coefficient or contrast to summarize
-#' @param prop.accepts=0.1 proportion of proposals accepted in order for model to be considered converged.  Default is 10% or 0.1.
+#' @param prop.accepts.betas minimum acceptance rate for regression coefficients to be considered converged. Default is 0.1.
+#' @param prop.accepts.alphas minimum acceptance rate for dispersion parameters to be considered converged.. Default is 0.1.
+#' @param geweke.p minimum Geweke p-value for a paramter to be considered converged.
 #' @param order_by character string or vector of character strings which variable(s) to order the results table by: "posterior_median": order by posterior median (default decreasing order); "posterior_median_abs": order by absolute value of the median (default decreasing order); "BF": order by bayes factor (default decreasing order); "exact_pval": order by exact p-value (default increasing order); "BH_adjusted_pval": Order by adjusted p-value (default increasing order)
 #' @param decreasing logical (TRUE or FALSE) indicating if the results table should appear in decreasing order
 #' @param filter_by optional character string which variable to use to filter: "posterior_median": filter by posterior mean (default: greater than filter_val); "posterior_median_abs": filter by absolute value of posterior mean (default: greater than filter_val); "BF": filter by bayes factor (default: greater than filter_val); "exact_pval": filter exact p-value (default:less than filter_val); "BH_adjusted_pval": filter by adjusted p-value (default: less than filtre_val);
@@ -21,11 +23,12 @@
 #' @export
 #'
 
-mcmseq.summarize <- function(mcmseqModel, # mcmseq object fit using mcmseq.fit
+mcmseq.summary <- function(mcmseqModel, # mcmseq object fit using mcmseq.fit
                              summarizeWhat="coefficient", #character string indicating what to summarize:"coefficient" to summarize fixed effect coefficients or "contrast" to summarize contrasts
                              which = 1,  # character string or numeric indicator of which coefficient or contrast to summarize
-                             prop.accepts.coef=c(0.1,1), # range of acceptance rates for regression coefficients where model is considered converged.
-                             prop.accepts.dispersion = c(0.1, 0.7), # range of acceptance rates for dispersion parameters where model is considered converged.
+                             prop.accepts.betas=c(0.1), #minimum acceptance rate for regression coefficients to be considered converged. Default is 0.1.
+                             prop.accepts.alphas = c(0.1), # minimum acceptance rate for dispersions to be considered converged. Default is 0.1.
+                             geweke.p = 0.05,#minimum Geweke p-value for a paramter to be considered converged.
                              order_by=NULL, # character string indicating which variable to order the results table by:
                              #       "posterior_median": order by posterior median
                              #                           (default decreasing order);
@@ -52,11 +55,13 @@ mcmseq.summarize <- function(mcmseqModel, # mcmseq object fit using mcmseq.fit
   # Get Gene Names
   geneNames<-mcmseqModel$gene_names
 
-  # Calculate number of accepts to filter out
-  accepts.lower = prop.accepts.coef[1]*mcmseqModel$n_it
-  accepts.upper = prop.accepts.coef[2]*mcmseqModel$n_it
-  accepts.lower.disp = prop.accepts.dispersion[1]*mcmseqModel$n_it
-  accepts.upper.disp = prop.accepts.dispersion[2]*mcmseqModel$n_it
+  # Use the convergence check function to remove genes that failed to converge
+  failed <- mcmseq.covergence(mcmseqModel,
+                              prop.accepts.betas=prop.accepts.betas,
+                              prop.accepts.alphas = prop.accepts.alphas,
+                              geweke.p = geweke.p
+                              )
+
 
   #Pull coefficients or contrasts based on summarizeWhat argument (Error if argument doesn't match)
   if(summarizeWhat=="contrast"){
@@ -69,10 +74,7 @@ mcmseq.summarize <- function(mcmseqModel, # mcmseq object fit using mcmseq.fit
 
   #Get index numbers for genes with big enough number of accepts
   #Filter out genes without big enough # of accepts from gene names and data array
-  accepts_filtered<-which(mcmseqModel$accepts_betas>=accepts.lower &
-                            mcmseqModel$accepts_betas<=accepts.upper &
-                            mcmseqModel$accepts_alphas>=accepts.lower.disp &
-                            mcmseqModel$accepts_alphas<=accepts.upper.disp)
+  accepts_filtered<- seq(1, length(geneNames),1)[-(failed$index)]
   geneNames_filtered<-geneNames[accepts_filtered]
   data_matrix_filtered<-data_matrix[,accepts_filtered]
 

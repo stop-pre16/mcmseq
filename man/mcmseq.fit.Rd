@@ -10,7 +10,8 @@ mcmseq.fit(counts = NULL, gene_names = NULL, fixed_effects = NULL,
   prior_sd_betas = 7, prior_u_re_var = 0.01, prior_v_re_var = 0.01,
   prior_sd_log_alpha = 7, prior_mean_log_alpha = NULL, n_it = 1000,
   rw_sd_log_alpha = 3, starting_betas = NULL, rw_sd_betas = 0.5,
-  prop_burn_in = 0.1, num_accept = 20L)
+  prop_burn_in = 0.1, num_accept = 20L, prop.accepts.betas = c(0.1),
+  prop.accepts.alphas = c(0.1), geweke.p = 0.05)
 }
 \arguments{
 \item{counts}{A (G x N) numeric matrix or data frame of RNA-seq counts, with genes in rows and samples in columns. G = number of genes.  N = number of samples.}
@@ -41,7 +42,7 @@ mcmseq.fit(counts = NULL, gene_names = NULL, fixed_effects = NULL,
 
 \item{prior_mean_log_alpha}{Vector of prior means for log of dispersion parameters.  If a single value is provided (rather than a vector), the same value will be used for all genes. Default is -ln(2) for all genes.}
 
-\item{n_it}{Number of MCMC iterations.  Default is 30,000.}
+\item{n_it}{Number of MCMC iterations.  Default is 1,000.}
 
 \item{rw_sd_log_alpha}{Standard deviation for the random walk proposal for dispersion values (normal distribution centerd at current value)}
 
@@ -51,7 +52,13 @@ mcmseq.fit(counts = NULL, gene_names = NULL, fixed_effects = NULL,
 
 \item{prop_burn_in}{Number between 0 and 1 indicating the proportion of MCMC chain to discard as burn-in.  Default is 0.1.}
 
-\item{num_accept}{Number of forced accepts of fixed and random effects at the beginning of the MCMC. In practice forcing about 20 accepts (default value) prevents inverse errors at the start of chains and gives better mixing overall.  This value must be less than or equal to the number of burn-in iterations.
+\item{num_accept}{Number of forced accepts of fixed and random effects at the beginning of the MCMC. In practice forcing about 20 accepts (default value) prevents inverse errors at the start of chains and gives better mixing overall.  This value must be less than or equal to the number of burn-in iterations.}
+
+\item{prop.accepts.betas}{minimum acceptance rate for regression coefficients to be considered converged. Default is 0.1.}
+
+\item{prop.accepts.alphas}{minimum acceptance rate for dispersion parameters to be considered converged.. Default is 0.1.}
+
+\item{geweke.p}{minimum Geweke p-value for a paramter to be considered converged.
 #'}
 }
 \value{

@@ -16,3 +16,7 @@ LinkingTo: Rcpp,
 SystemRequirements: GNU make
 URL: https//github.com/stop-pre16/mcmseq
 RoxygenNote: 6.1.1
+Suggests: 
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
