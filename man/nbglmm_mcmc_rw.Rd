@@ -7,9 +7,8 @@
 nbglmm_mcmc_rw(counts, design_mat, design_mat_re, contrast_mat,
   prior_sd_betas, rw_sd_betas, prior_sd_betas_a, prior_sd_betas_b,
   prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset,
-  starting_betas, prop_burn = 0.1, grain_size = 1L,
-  return_cont = FALSE, beta_names = NA_character_,
-  cont_names = NA_character_)
+  starting_betas, prop_burn = 0.1, return_cont = FALSE,
+  beta_names = NA_character_, cont_names = NA_character_)
 }
 \arguments{
 \item{counts}{a matrix of counts}
@@ -35,8 +34,6 @@ nbglmm_mcmc_rw(counts, design_mat, design_mat_re, contrast_mat,
 \item{rw_sd_rs}{random walk std. dev. for proposing dispersion values}
 
 \item{log_offset}{vector of offsets on log scale}
-
-\item{grain_size}{minimum size of parallel jobs, defaults to 1, can ignore for now}
 }
 \value{
 Returns a list with a cube of regression parameters, including random effects, a matrix of dispersion values, and a matrix of random intercept variances

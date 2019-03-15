@@ -60,9 +60,6 @@ mcmseq.fit <- function(counts=NULL, # matrix of RNA-Seq counts where rows are ge
                        geweke.p = 0.05#minimum Geweke p-value for a paramter to be considered converged.
                        ){
 
-  # For now set grain_size to default; Brian may remove this later.
-  grain_size = 1L
-
   # Determine if contrasts will be run and create a variable to pass info to the C++ functions
   run_contrasts = ifelse(is.null(contrast_mat)==F, TRUE, FALSE)
 
@@ -301,7 +298,6 @@ mcmseq.fit <- function(counts=NULL, # matrix of RNA-Seq counts where rows are ge
                             rw_sd_rs = rw_sd_log_alpha,
                             log_offset = log_offset,
                             starting_betas = starting_betas,
-                            grain_size = 1L ,
                             prop_burn = prop_burn_in,
                             return_cont = run_contrasts,
                             # gene_names = gene_names,
@@ -322,7 +318,6 @@ mcmseq.fit <- function(counts=NULL, # matrix of RNA-Seq counts where rows are ge
                                   log_offset = log_offset,
                                   starting_betas = starting_betas,
                                   prop_burn_in = prop_burn_in,
-                                  grain_size = grain_size,
                                   num_accept = num_accept,
                                   return_cont = run_contrasts,
                                   # gene_names = gene_names,
@@ -344,7 +339,6 @@ mcmseq.fit <- function(counts=NULL, # matrix of RNA-Seq counts where rows are ge
                                                       rw_sd_rs = rw_sd_log_alpha,
                                                       log_offset = log_offset,
                                                       starting_betas = starting_betas,
-                                                      #grain_size = grain_size,
                                                       prop_burn = prop_burn_in,
                                                       return_cont = run_contrasts,
                                                       # gene_names = gene_names,
@@ -362,7 +356,6 @@ mcmseq.fit <- function(counts=NULL, # matrix of RNA-Seq counts where rows are ge
                                  rw_sd_rs = rw_sd_log_alpha,
                                  log_offset = log_offset,
                                  starting_betas = starting_betas,
-                                 grain_size = grain_size,
                                  burn_in_prop = prop_burn_in,
                                  return_cont = run_contrasts,
                                  # gene_names = gene_names,

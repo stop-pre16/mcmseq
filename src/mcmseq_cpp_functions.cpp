@@ -923,7 +923,6 @@ arma::cube mcmc_chain_glm_rw_par(const arma::mat &counts,
 //' @param n_it number of iterations to run MCMC
 //' @param rw_sd_rs random walk std. dev. for proposing dispersion values
 //' @param log_offset vector of offsets on log scale
-//' @param grain_size minimum size of parallel jobs, defaults to 1, can ignore for now
 //'
 //' @author Brian Vestal
 //'
@@ -1277,7 +1276,6 @@ arma::cube mcmc_chain_rw_par2(const arma::mat &counts,
 //' @param n_it number of iterations to run MCMC
 //' @param rw_sd_rs random walk std. dev. for proposing dispersion values
 //' @param log_offset vector of offsets on log scale
-//' @param grain_size minimum size of parallel jobs, defaults to 1, can ignore for now
 //'
 //' @author Brian Vestal
 //'
@@ -1302,7 +1300,6 @@ Rcpp::List nbglmm_mcmc_rw(arma::mat counts,
                           arma::vec log_offset,
                           arma::mat starting_betas,
                           double prop_burn = .10,
-                          int grain_size = 1,
                           bool return_cont = false,
                           Rcpp::StringVector beta_names = NA_STRING,
                           Rcpp::StringVector cont_names = NA_STRING){
@@ -1665,7 +1662,6 @@ arma::cube mcmc_chain_glm_sum_cont_par(const arma::mat &counts,
 //' @param n_it number of iterations to run MCMC
 //' @param rw_sd_rs random wal std. dev. for proposing dispersion values
 //' @param log_offset vector of offsets on log scale
-//' @param grain_size minimum size of parallel jobs, defaults to 1, can ignore for now
 //'
 //' @author Brian Vestal
 //'
@@ -2131,7 +2127,6 @@ arma::cube mcmc_chain_par_sum_cont_pb(const arma::mat &counts,
 //' @param n_it Number of iterations to run MCMC
 //' @param log_offset Vector of offsets on log scale
 //' @param prop_burn_in Proportion of MCMC chain to discard as burn-in when computing summaries
-//' @param grain_size minimum size of parallel jobs, defaults to 1, can ignore for now
 //' @param starting_betas Numeric matrix of starting values for the regression coefficients.  For best results, supply starting values for at least the intercept (e.g. row means of counts matrix)
 //' @param num_accept Number of forced accepts of fixed and random effects at the beginning of the MCMC.  In practice forcing about 20 accepts (default value) prevents inverse errors at the start of chains and gives better mixing overall
 //'
@@ -2157,7 +2152,6 @@ Rcpp::List nbglmm_mcmc_wls(arma::mat counts,
                            arma::vec log_offset,
                            arma::mat starting_betas,
                            double prop_burn_in = 0.10,
-                           int grain_size = 1,
                            int num_accept = 20,
                            bool return_cont = false,
                            Rcpp::StringVector beta_names = NA_STRING,
@@ -2566,7 +2560,6 @@ arma::cube mcmc_chain_par_sum_cont_pb2(const arma::mat &counts,
 //' @param n_it Number of iterations to run MCMC
 //' @param log_offset Vector of offsets on log scale
 //' @param prop_burn_in Proportion of MCMC chain to discard as burn-in when computing summaries
-//' @param grain_size minimum size of parallel jobs, defaults to 1, can ignore for now
 //' @param starting_betas Numeric matrix of starting values for the regression coefficients.  For best results, supply starting values for at least the intercept (e.g. row means of counts matrix)
 //' @param num_accept Number of forced accepts of fixed and random effects at the beginning of the MCMC.  In practice forcing about 20 accepts (default value) prevents inverse errors at the start of chains and gives better mixing overall
 //'
@@ -2593,7 +2586,6 @@ Rcpp::List nbglmm_mcmc_wls2(arma::mat counts,
                             arma::vec log_offset,
                             arma::mat starting_betas,
                             double prop_burn_in = 0.10,
-                            int grain_size = 1,
                             int num_accept = 20,
                             bool return_cont = false,
                             Rcpp::StringVector beta_names = NA_STRING,
@@ -2963,7 +2955,6 @@ arma::cube mcmc_chain_par_sum_cont_pb3(const arma::mat &counts,
 //' @param n_it Number of iterations to run MCMC
 //' @param log_offset Vector of offsets on log scale
 //' @param prop_burn_in Proportion of MCMC chain to discard as burn-in when computing summaries
-//' @param grain_size minimum size of parallel jobs, defaults to 1, can ignore for now
 //' @param starting_betas Numeric matrix of starting values for the regression coefficients.  For best results, supply starting values for at least the intercept (e.g. row means of counts matrix)
 //' @param num_accept Number of forced accepts of fixed and random effects at the beginning of the MCMC.  In practice forcing about 20 accepts (default value) prevents inverse errors at the start of chains and gives better mixing overall
 //'
@@ -2991,7 +2982,6 @@ Rcpp::List nbglmm_mcmc_wls3(arma::mat counts,
                             arma::mat starting_betas,
                             double prop_burn_in = 0.10,
                             double tau = 10,
-                            int grain_size = 1,
                             int num_accept = 20,
                             bool return_cont = false,
                             Rcpp::StringVector beta_names = NA_STRING,
@@ -3353,7 +3343,6 @@ arma::cube mcmc_chain_par_sum_cont_pb4(const arma::mat &counts,
 //' @param n_it Number of iterations to run MCMC
 //' @param log_offset Vector of offsets on log scale
 //' @param prop_burn_in Proportion of MCMC chain to discard as burn-in when computing summaries
-//' @param grain_size minimum size of parallel jobs, defaults to 1, can ignore for now
 //' @param starting_betas Numeric matrix of starting values for the regression coefficients.  For best results, supply starting values for at least the intercept (e.g. row means of counts matrix)
 //' @param num_accept Number of forced accepts of fixed and random effects at the beginning of the MCMC.  In practice forcing about 20 accepts (default value) prevents inverse errors at the start of chains and gives better mixing overall
 //'
@@ -3381,7 +3370,6 @@ Rcpp::List nbglmm_mcmc_wls4(arma::mat counts,
                             arma::mat starting_betas,
                             double prop_burn_in = 0.10,
                             double tau = 10,
-                            int grain_size = 1,
                             int num_accept = 20,
                             bool return_cont = false,
                             Rcpp::StringVector beta_names = NA_STRING,
@@ -3710,7 +3698,6 @@ arma::cube mcmc_chain_par_sum_cont_pb_wc(const arma::mat &counts,
 //' @param n_it Number of iterations to run MCMC
 //' @param log_offset Vector of offsets on log scale
 //' @param prop_burn_in Proportion of MCMC chain to discard as burn-in when computing summaries
-//' @param grain_size minimum size of parallel jobs, defaults to 1, can ignore for now
 //' @param starting_betas Numeric matrix of starting values for the regression coefficients.  For best results, supply starting values for at least the intercept (e.g. row means of counts matrix)
 //' @param num_accept Number of forced accepts of fixed and random effects at the beginning of the MCMC.  In practice forcing about 20 accepts (default value) prevents inverse errors at the start of chains and gives better mixing overall
 //'
@@ -3736,7 +3723,6 @@ Rcpp::List nbglmm_mcmc_wls_wc(arma::mat counts,
                            arma::vec log_offset,
                            arma::mat starting_betas,
                            double prop_burn_in = 0.10,
-                           int grain_size = 1,
                            int num_accept = 20,
                            bool return_cont = false,
                            Rcpp::StringVector beta_names = NA_STRING,

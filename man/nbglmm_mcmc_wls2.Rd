@@ -7,8 +7,8 @@
 nbglmm_mcmc_wls2(counts, design_mat, design_mat_re, contrast_mat,
   prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs,
   prior_mean_log_rs, n_it, rw_sd_rs, rw_sd_sigma, log_offset,
-  starting_betas, prop_burn_in = 0.1, grain_size = 1L,
-  num_accept = 20L, return_cont = FALSE, beta_names = NA_character_,
+  starting_betas, prop_burn_in = 0.1, num_accept = 20L,
+  return_cont = FALSE, beta_names = NA_character_,
   cont_names = NA_character_)
 }
 \arguments{
@@ -39,8 +39,6 @@ nbglmm_mcmc_wls2(counts, design_mat, design_mat_re, contrast_mat,
 \item{starting_betas}{Numeric matrix of starting values for the regression coefficients.  For best results, supply starting values for at least the intercept (e.g. row means of counts matrix)}
 
 \item{prop_burn_in}{Proportion of MCMC chain to discard as burn-in when computing summaries}
-
-\item{grain_size}{minimum size of parallel jobs, defaults to 1, can ignore for now}
 
 \item{num_accept}{Number of forced accepts of fixed and random effects at the beginning of the MCMC.  In practice forcing about 20 accepts (default value) prevents inverse errors at the start of chains and gives better mixing overall}
 }

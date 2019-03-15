@@ -33,8 +33,6 @@ nbglm_mcmc_rw(counts, design_mat, contrast_mat, prior_sd_betas,
 \item{prior_sd_betas_a}{alpha in inverse gamma prior for random intercept variance}
 
 \item{prior_sd_betas_b}{beta in inverse gamma prior for random intercept variance}
-
-\item{grain_size}{minimum size of parallel jobs, defaults to 1, can ignore for now}
 }
 \value{
 Returns a list with a cube of regression parameters, including random effects, a matrix of dispersion values, and a matrix of random intercept variances

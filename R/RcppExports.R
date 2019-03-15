@@ -18,7 +18,6 @@
 #' @param n_it number of iterations to run MCMC
 #' @param rw_sd_rs random wal std. dev. for proposing dispersion values
 #' @param log_offset vector of offsets on log scale
-#' @param grain_size minimum size of parallel jobs, defaults to 1, can ignore for now
 #'
 #' @author Brian Vestal
 #'
@@ -48,7 +47,6 @@ NULL
 #' @param n_it Number of iterations to run MCMC
 #' @param log_offset Vector of offsets on log scale
 #' @param prop_burn_in Proportion of MCMC chain to discard as burn-in when computing summaries
-#' @param grain_size minimum size of parallel jobs, defaults to 1, can ignore for now
 #' @param starting_betas Numeric matrix of starting values for the regression coefficients.  For best results, supply starting values for at least the intercept (e.g. row means of counts matrix)
 #' @param num_accept Number of forced accepts of fixed and random effects at the beginning of the MCMC.  In practice forcing about 20 accepts (default value) prevents inverse errors at the start of chains and gives better mixing overall
 #'
@@ -80,7 +78,6 @@ NULL
 #' @param n_it Number of iterations to run MCMC
 #' @param log_offset Vector of offsets on log scale
 #' @param prop_burn_in Proportion of MCMC chain to discard as burn-in when computing summaries
-#' @param grain_size minimum size of parallel jobs, defaults to 1, can ignore for now
 #' @param starting_betas Numeric matrix of starting values for the regression coefficients.  For best results, supply starting values for at least the intercept (e.g. row means of counts matrix)
 #' @param num_accept Number of forced accepts of fixed and random effects at the beginning of the MCMC.  In practice forcing about 20 accepts (default value) prevents inverse errors at the start of chains and gives better mixing overall
 #'
@@ -111,7 +108,6 @@ NULL
 #' @param n_it number of iterations to run MCMC
 #' @param rw_sd_rs random walk std. dev. for proposing dispersion values
 #' @param log_offset vector of offsets on log scale
-#' @param grain_size minimum size of parallel jobs, defaults to 1, can ignore for now
 #'
 #' @author Brian Vestal
 #'
@@ -143,7 +139,6 @@ nbglm_mcmc_rw <- function(counts, design_mat, contrast_mat, prior_sd_betas, rw_s
 #' @param n_it number of iterations to run MCMC
 #' @param rw_sd_rs random walk std. dev. for proposing dispersion values
 #' @param log_offset vector of offsets on log scale
-#' @param grain_size minimum size of parallel jobs, defaults to 1, can ignore for now
 #'
 #' @author Brian Vestal
 #'
@@ -151,16 +146,16 @@ nbglm_mcmc_rw <- function(counts, design_mat, contrast_mat, prior_sd_betas, rw_s
 #' Returns a list with a cube of regression parameters, including random effects, a matrix of dispersion values, and a matrix of random intercept variances
 #'
 #' @export
-nbglmm_mcmc_rw <- function(counts, design_mat, design_mat_re, contrast_mat, prior_sd_betas, rw_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, prop_burn = .10, grain_size = 1L, return_cont = FALSE, beta_names = NA_character_, cont_names = NA_character_) {
-    .Call('_mcmseq_nbglmm_mcmc_rw', PACKAGE = 'mcmseq', counts, design_mat, design_mat_re, contrast_mat, prior_sd_betas, rw_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, prop_burn, grain_size, return_cont, beta_names, cont_names)
+nbglmm_mcmc_rw <- function(counts, design_mat, design_mat_re, contrast_mat, prior_sd_betas, rw_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, prop_burn = .10, return_cont = FALSE, beta_names = NA_character_, cont_names = NA_character_) {
+    .Call('_mcmseq_nbglmm_mcmc_rw', PACKAGE = 'mcmseq', counts, design_mat, design_mat_re, contrast_mat, prior_sd_betas, rw_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, prop_burn, return_cont, beta_names, cont_names)
 }
 
 nbglm_mcmc_wls <- function(counts, design_mat, contrast_mat, prior_sd_betas, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, burn_in_prop = .1, return_cont = FALSE, beta_names = NA_character_, cont_names = NA_character_) {
     .Call('_mcmseq_nbglm_mcmc_wls', PACKAGE = 'mcmseq', counts, design_mat, contrast_mat, prior_sd_betas, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, burn_in_prop, return_cont, beta_names, cont_names)
 }
 
-nbglmm_mcmc_wls <- function(counts, design_mat, design_mat_re, contrast_mat, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, prop_burn_in = 0.10, grain_size = 1L, num_accept = 20L, return_cont = FALSE, beta_names = NA_character_, cont_names = NA_character_) {
-    .Call('_mcmseq_nbglmm_mcmc_wls', PACKAGE = 'mcmseq', counts, design_mat, design_mat_re, contrast_mat, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, prop_burn_in, grain_size, num_accept, return_cont, beta_names, cont_names)
+nbglmm_mcmc_wls <- function(counts, design_mat, design_mat_re, contrast_mat, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, prop_burn_in = 0.10, num_accept = 20L, return_cont = FALSE, beta_names = NA_character_, cont_names = NA_character_) {
+    .Call('_mcmseq_nbglmm_mcmc_wls', PACKAGE = 'mcmseq', counts, design_mat, design_mat_re, contrast_mat, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, prop_burn_in, num_accept, return_cont, beta_names, cont_names)
 }
 
 #' Negative Binomial GLMM fit for RNA-Seq expression using MCMC (contrast version)
@@ -184,7 +179,6 @@ nbglmm_mcmc_wls <- function(counts, design_mat, design_mat_re, contrast_mat, pri
 #' @param n_it Number of iterations to run MCMC
 #' @param log_offset Vector of offsets on log scale
 #' @param prop_burn_in Proportion of MCMC chain to discard as burn-in when computing summaries
-#' @param grain_size minimum size of parallel jobs, defaults to 1, can ignore for now
 #' @param starting_betas Numeric matrix of starting values for the regression coefficients.  For best results, supply starting values for at least the intercept (e.g. row means of counts matrix)
 #' @param num_accept Number of forced accepts of fixed and random effects at the beginning of the MCMC.  In practice forcing about 20 accepts (default value) prevents inverse errors at the start of chains and gives better mixing overall
 #'
@@ -194,8 +188,8 @@ nbglmm_mcmc_wls <- function(counts, design_mat, design_mat_re, contrast_mat, pri
 #' Returns a list with a cube of regression parameters, including random effects, a matrix of dispersion values, and a matrix of random intercept variances
 #'
 #' @export
-nbglmm_mcmc_wls2 <- function(counts, design_mat, design_mat_re, contrast_mat, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, rw_sd_sigma, log_offset, starting_betas, prop_burn_in = 0.10, grain_size = 1L, num_accept = 20L, return_cont = FALSE, beta_names = NA_character_, cont_names = NA_character_) {
-    .Call('_mcmseq_nbglmm_mcmc_wls2', PACKAGE = 'mcmseq', counts, design_mat, design_mat_re, contrast_mat, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, rw_sd_sigma, log_offset, starting_betas, prop_burn_in, grain_size, num_accept, return_cont, beta_names, cont_names)
+nbglmm_mcmc_wls2 <- function(counts, design_mat, design_mat_re, contrast_mat, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, rw_sd_sigma, log_offset, starting_betas, prop_burn_in = 0.10, num_accept = 20L, return_cont = FALSE, beta_names = NA_character_, cont_names = NA_character_) {
+    .Call('_mcmseq_nbglmm_mcmc_wls2', PACKAGE = 'mcmseq', counts, design_mat, design_mat_re, contrast_mat, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, rw_sd_sigma, log_offset, starting_betas, prop_burn_in, num_accept, return_cont, beta_names, cont_names)
 }
 
 #' Negative Binomial GLMM fit for RNA-Seq expression using MCMC (contrast version)
@@ -219,7 +213,6 @@ nbglmm_mcmc_wls2 <- function(counts, design_mat, design_mat_re, contrast_mat, pr
 #' @param n_it Number of iterations to run MCMC
 #' @param log_offset Vector of offsets on log scale
 #' @param prop_burn_in Proportion of MCMC chain to discard as burn-in when computing summaries
-#' @param grain_size minimum size of parallel jobs, defaults to 1, can ignore for now
 #' @param starting_betas Numeric matrix of starting values for the regression coefficients.  For best results, supply starting values for at least the intercept (e.g. row means of counts matrix)
 #' @param num_accept Number of forced accepts of fixed and random effects at the beginning of the MCMC.  In practice forcing about 20 accepts (default value) prevents inverse errors at the start of chains and gives better mixing overall
 #'
@@ -229,8 +222,8 @@ nbglmm_mcmc_wls2 <- function(counts, design_mat, design_mat_re, contrast_mat, pr
 #' Returns a list with a cube of regression parameters, including random effects, a matrix of dispersion values, and a matrix of random intercept variances
 #'
 #' @export
-nbglmm_mcmc_wls3 <- function(counts, design_mat, design_mat_re, contrast_mat, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, rw_sd_sigma, log_offset, starting_betas, prop_burn_in = 0.10, tau = 10, grain_size = 1L, num_accept = 20L, return_cont = FALSE, beta_names = NA_character_, cont_names = NA_character_) {
-    .Call('_mcmseq_nbglmm_mcmc_wls3', PACKAGE = 'mcmseq', counts, design_mat, design_mat_re, contrast_mat, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, rw_sd_sigma, log_offset, starting_betas, prop_burn_in, tau, grain_size, num_accept, return_cont, beta_names, cont_names)
+nbglmm_mcmc_wls3 <- function(counts, design_mat, design_mat_re, contrast_mat, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, rw_sd_sigma, log_offset, starting_betas, prop_burn_in = 0.10, tau = 10, num_accept = 20L, return_cont = FALSE, beta_names = NA_character_, cont_names = NA_character_) {
+    .Call('_mcmseq_nbglmm_mcmc_wls3', PACKAGE = 'mcmseq', counts, design_mat, design_mat_re, contrast_mat, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, rw_sd_sigma, log_offset, starting_betas, prop_burn_in, tau, num_accept, return_cont, beta_names, cont_names)
 }
 
 #' Negative Binomial GLMM fit for RNA-Seq expression using MCMC (contrast version)
@@ -254,7 +247,6 @@ nbglmm_mcmc_wls3 <- function(counts, design_mat, design_mat_re, contrast_mat, pr
 #' @param n_it Number of iterations to run MCMC
 #' @param log_offset Vector of offsets on log scale
 #' @param prop_burn_in Proportion of MCMC chain to discard as burn-in when computing summaries
-#' @param grain_size minimum size of parallel jobs, defaults to 1, can ignore for now
 #' @param starting_betas Numeric matrix of starting values for the regression coefficients.  For best results, supply starting values for at least the intercept (e.g. row means of counts matrix)
 #' @param num_accept Number of forced accepts of fixed and random effects at the beginning of the MCMC.  In practice forcing about 20 accepts (default value) prevents inverse errors at the start of chains and gives better mixing overall
 #'
@@ -264,11 +256,11 @@ nbglmm_mcmc_wls3 <- function(counts, design_mat, design_mat_re, contrast_mat, pr
 #' Returns a list with a cube of regression parameters, including random effects, a matrix of dispersion values, and a matrix of random intercept variances
 #'
 #' @export
-nbglmm_mcmc_wls4 <- function(counts, design_mat, design_mat_re, contrast_mat, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, rw_sd_sigma, log_offset, starting_betas, prop_burn_in = 0.10, tau = 10, grain_size = 1L, num_accept = 20L, return_cont = FALSE, beta_names = NA_character_, cont_names = NA_character_) {
-    .Call('_mcmseq_nbglmm_mcmc_wls4', PACKAGE = 'mcmseq', counts, design_mat, design_mat_re, contrast_mat, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, rw_sd_sigma, log_offset, starting_betas, prop_burn_in, tau, grain_size, num_accept, return_cont, beta_names, cont_names)
+nbglmm_mcmc_wls4 <- function(counts, design_mat, design_mat_re, contrast_mat, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, rw_sd_sigma, log_offset, starting_betas, prop_burn_in = 0.10, tau = 10, num_accept = 20L, return_cont = FALSE, beta_names = NA_character_, cont_names = NA_character_) {
+    .Call('_mcmseq_nbglmm_mcmc_wls4', PACKAGE = 'mcmseq', counts, design_mat, design_mat_re, contrast_mat, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, rw_sd_sigma, log_offset, starting_betas, prop_burn_in, tau, num_accept, return_cont, beta_names, cont_names)
 }
 
-nbglmm_mcmc_wls_wc <- function(counts, design_mat, design_mat_re, contrast_mat, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, prop_burn_in = 0.10, grain_size = 1L, num_accept = 20L, return_cont = FALSE, beta_names = NA_character_, cont_names = NA_character_) {
-    .Call('_mcmseq_nbglmm_mcmc_wls_wc', PACKAGE = 'mcmseq', counts, design_mat, design_mat_re, contrast_mat, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, prop_burn_in, grain_size, num_accept, return_cont, beta_names, cont_names)
+nbglmm_mcmc_wls_wc <- function(counts, design_mat, design_mat_re, contrast_mat, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, prop_burn_in = 0.10, num_accept = 20L, return_cont = FALSE, beta_names = NA_character_, cont_names = NA_character_) {
+    .Call('_mcmseq_nbglmm_mcmc_wls_wc', PACKAGE = 'mcmseq', counts, design_mat, design_mat_re, contrast_mat, prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs, prior_mean_log_rs, n_it, rw_sd_rs, log_offset, starting_betas, prop_burn_in, num_accept, return_cont, beta_names, cont_names)
 }
 
