@@ -74,7 +74,9 @@ mcmseq.summary <- function(mcmseqModel, # mcmseq object fit using mcmseq.fit
 
   #Get index numbers for genes with big enough number of accepts
   #Filter out genes without big enough # of accepts from gene names and data array
-  accepts_filtered<- seq(1, length(geneNames),1)[-(failed$index)]
+  if(nrow(failed)>1){accepts_filtered<- seq(1, length(geneNames),1)[-(failed$index)]
+  }else{accepts_filtered <- seq(1, length(geneNames),1)}
+
   geneNames_filtered<-geneNames[accepts_filtered]
   data_matrix_filtered<-data_matrix[,accepts_filtered]
 

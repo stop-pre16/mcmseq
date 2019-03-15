@@ -20,6 +20,31 @@ mcmseq.covergence <- function(mcmseqModel,
                               prop.accepts.betas = 0.1,
                               prop.accepts.alphas = 0.1){
 
+
+  if (length(geweke.p)>1){geweke.p <- geweke.p[1]
+  print("Vector supplied for geweke.p.  Only the first element will be used.")
+  }
+
+  if(is.numeric(geweke.p)==F | geweke.p<0 | geweke.p>=1){
+    stop("geweke.p must be a number between 0 and 1.")
+  }
+
+  if (length(prop.accepts.betas)>1){prop.accepts.betas <- prop.accepts.betas[1]
+  print("Vector supplied for prop.accepts.betas  Only the first element will be used.")
+  }
+
+  if(is.numeric(prop.accepts.betas)==F | prop.accepts.betas<0 | prop.accepts.betas>=1){
+    stop("prop.accepts.betas must be a number between 0 and 1.")
+  }
+
+  if (length(prop.accepts.alphas)>1){prop.accepts.alphas <- prop.accepts.alphas[1]
+  print("Vector supplied for prop.accepts.betas  Only the first element will be used.")
+  }
+
+  if(is.numeric(prop.accepts.alphas)==F | prop.accepts.alphas<0 | prop.accepts.alphas>=1){
+    stop("prop.accepts.alphas must be a number between 0 and 1.")
+  }
+
   failed_geweke <- failed_betas <- failed_alphas <- NULL
 
   # Check Geweke

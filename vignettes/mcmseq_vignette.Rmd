@@ -272,9 +272,7 @@ Importantly, the mcmseq.summary function also filters out genes that may not hav
 # Summarize results for the first contrast, on the log2 scale
 c1_table <- mcmseq.summary(mcmseqModel = fit.default, 
                  summarizeWhat="contrast",  
-                 which = "Treatment_v_Control_at_FollowUp",  
-                 prop.accepts.betas = c(0.1,1), 
-                 prop.accepts.alphas  = c(0.1,0.7),
+                 which = "Treatment_v_Control_at_FollowUp",
                   log2=TRUE 
             )
 
@@ -359,9 +357,7 @@ We can summarize the results as usual.
 # Summarize results for the first contrast, on the log2 scale
 c1_table_custom <- mcmseq.summary(mcmseqModel = fit.custom, 
                  summarizeWhat="contrast",  
-                 which = "Treatment_v_Control_at_FollowUp",  
-                 prop.accepts.betas = c(0.1,1), 
-                 prop.accepts.alphas  = c(0.1,0.7),
+                 which = "Treatment_v_Control_at_FollowUp",
                   log2=TRUE 
             )
 
@@ -374,8 +370,8 @@ head(c1_table_custom)
 c1_table_custom_filtered <- mcmseq.summary(mcmseqModel = fit.custom, 
                  summarizeWhat="contrast",  
                  which = "Treatment_v_Control_at_FollowUp",  
-                 prop.accepts.betas = c(0.1,1), 
-                 prop.accepts.alphas  = c(0.1,0.7),
+                 prop.accepts.betas = c(0.1), 
+                 prop.accepts.alphas  = c(0.1),
                  order_by = "BH_adjusted_pval", 
                  decreasing = FALSE,
                  filter_by = c("BH_adjusted_pval", "posterior_median_abs"),
