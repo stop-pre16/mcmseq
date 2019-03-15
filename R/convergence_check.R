@@ -40,7 +40,7 @@ mcmseq.covergence <- function(mcmseqModel,
   }else{print(paste0(length(failed_to_converge), " genes did not meet convergence criteria. Check Geweke statistics and acceptance rates to diagnose problems."))}
 
   return(data.frame(index = failed_to_converge,
-                    mcmseqModel$gene_names[failed_to_converge],
+                    gene_names = mcmseqModel$gene_names[failed_to_converge],
                     adjusted_geweke[failed_to_converge, ],
                     accept_rate_betas = (mcmseqModel$accepts_betas[failed_to_converge]/mcmseqModel$n_it),
                     accept_rate_alphas = (mcmseqModel$accepts_alphas[failed_to_converge]/mcmseqModel$n_it)

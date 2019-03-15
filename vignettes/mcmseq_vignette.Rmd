@@ -96,7 +96,7 @@ By default fixed and random effect regression coefficients are updated using a M
 
 Similarly, the dispersion parameters are also updated using a random walk proposal with a standard deviation of rw_sd_log_alpha.  This parameter may need to be tuned in order to achieve appropriate mixing and acceptance probabilities.
 
-For random walk proposals, acceptance rates around 23\% are considered optimal.  In practice, we filter out features that have acceptance probabilities less than 10\%. In addition, we use Geweke statistics to evaluate mixing and convergence.  Geweke statistics compare the mean values of each paramter during the first 10\% of iterations (after burn in) to the mean in the last 10\%.  If the chain is converged, these two means should be similar.  Small p-values for Geweke statistics indicate that the means are different and that model has not converged. If many features have low acceptance rates or low Geweke p-values, you should consider changing rw_sd_log_alpha (or rw_sd_betas for coefficients).  To increase acceptance rates, reduce the value of rw_sd_log_alpha.  To decrease acceptance rates increase rw_sd_log_alpha.  Before running mcmseq on your full dataset, you may want to do a test run with a small number of features (1,000) and adjust random walk standard deviations as needed. 
+For random walk proposals, acceptance rates around 23\% are considered optimal.  In practice, we filter out features that have acceptance probabilities less than 10\%. In addition, we use Geweke statistics to evaluate mixing and convergence.  Geweke statistics compare the mean values of each paramter during the first 20\% of iterations (after burn in) to the mean in the last 50\%.  If the chain is converged, these two means should be similar.  Small p-values for Geweke statistics indicate that the means are different and that model has not converged and that the number of iterations should be increased. If many features have low acceptance rates, you should also consider changing rw_sd_log_alpha (or rw_sd_betas for coefficients).  To increase acceptance rates, reduce the value of rw_sd_log_alpha.  To decrease acceptance rates increase rw_sd_log_alpha.  Before running mcmseq on your full dataset, you may want to do a test run with a small number of features (1,000) and adjust random walk standard deviations as needed. 
 
 #### _Convergence Options_
 
@@ -233,7 +233,7 @@ class(fit.default)
 names(fit.default)
 ```
 
-The resulting mcmseq object is a list.  Elements 7-23 of the list provide information about the user supplied and/or default settings used to fit the model.  "betas_est" is a 3 dimensional array (number of fixed effects x 4 x number of genes), which contains the posterior median, standard deviation, Bayes factor, and raw pseudo p-value for each regression coefficient for each gene.  Similarly, "contrast_est" is a 3 dimensional array (number contrasts x 4 x number of genes), containing the same information for each contrast. "alphas_est" contains the dispersion parameters for each gene, and  "sig2_est" contains the random intercept variance for each gene.  "accepts_betas" contains the number of iterations where a proposal for the regression coefficients was accepted, which provides information about the mixing of the chain. Similarly, "accepts_alphas" provides the number of accepts for updates of the dispersion parameter. If the chain does not have an appropirate acceptance rate, then the chain for that gene may not be adequately converged to make inference.   
+The resulting mcmseq object is a list.  Elements 8-24 of the list provide information about the user supplied and/or default settings used to fit the model.  "betas_est" is a 3 dimensional array (number of fixed effects x 4 x number of genes), which contains the posterior median, standard deviation, Bayes factor, and raw pseudo p-value for each regression coefficient for each gene.  Similarly, "contrast_est" is a 3 dimensional array (number contrasts x 4 x number of genes), containing the same information for each contrast. "alphas_est" contains the dispersion parameters for each gene, and  "sig2_est" contains the random intercept variance for each gene.   
 ```{r}
 # See regression coefficient estimates for the first gene
 fit.default$betas_est[,,1]
@@ -246,20 +246,18 @@ fit.default$contrast_est[,,1]
 fit.default$alphas_est[1:10]
 fit.default$sig2_est[1:10]
 
-# Calculate and check acceptance rates for the first 10 features
-# Dispersion accepts
-fit.default$accepts_alphas[1:10]/fit.default$n_it
-
-# Coefficient accepts
-fit.default$accepts_betas[1:10]/fit.default$n_it
 ```
 
-The mcmseq object also contains information about features that may have failed to converge. 
+The mcmseq object also contains information about genes that may have failed to converge. "accepts_betas" contains the number of iterations where a proposal for the regression coefficients was accepted, which provides information about the mixing of the chain. Similarly, "accepts_alphas" provides the number of accepts for updates of the dispersion parameter. "geweke_all" is a matrix of raw (unadjusted) Geweke p-values (number of rows = number of genes, columns = fixed effects, the random effect variance (if applicable), and dispersion). The last element of the mcmseq object, "convergence failures" contains information on genes that may have failed to converge based on the information from "accepts_alphas", "accepts_betas", and "geweke_all".  The raw p-values in "geweke_all" are FDR adjusted using a Benjamini-Hochberg correction to determine genes that have significant Geweke p-values. 
 ```{r}
-# See regression coefficient estimates for the first gene
+# See convergence failures, the Geweke p-values and acceptance rates
 fit.default$convergence_failures
 ```
-In our example, no genes had converence problems. 
+ It is likely that a handful of genes in our example have failed to converge due to low Geweke p-values since we have run so few MCMC iterations.  
+ 
+## What if a large number of genes fail to converge?
+If a large number of genes fail to converge, you should inspect the "convergence_failures" for low acceptance rates and low Geweke p-values.  If features fail due to low Geweke p-values, you might consider increasing the number of MCMC iterations, n_it.  If the acceptance rate for the dispersion parameter is low or very high, try adjusting rw_sd_log_alpha.  Reducing rw_sd_log_alpha will increase acceptance rates, while increasing rw_sd_log_alpha will reduce acceptance rates.  If features fail due to the acceptance rates for the regression coefficients, you might try using a random walk proposal for the coefficients instead of the WLS method for the subset of genes that failed to converge.
+
 
 ### Summarizing Results
 Results can be more easily summarized with the mcmseq.summary function, which calculates Benjamini-Hochberg adjusted p-values and allows for filtering and ordering of results into tables. By default, results will be presented in the same order in which they were supplied in the counts matrix.  However, results can be ordered by "posterior_median" (the posterior median of the regression coefficient or contrast of interest), "posterior_median_abs" (the absolute value of the posterior median), "BF" the Bayes factor, "exact_pval" (raw p-value), or "BH_adjusted_pval" (the Benjamini-Hochberg adjusted p-value).  Results can be retrieved in either descending or ascending order by setting the decreasing option to TRUE or FALSE, respectively.  
@@ -268,7 +266,7 @@ Results can also be filtered by one or more of these same variables, using the f
 
 By default results are presented on the natural log scale.  If you would prefer to see results on the log2 scale, use the log2 = TRUE option. 
 
-Importantly, the mcmseq.summary function also filters out genes that may not have converged. By default, genes with acceptance rates for regression coefficients or dispersions less than 10\% or Geweke p-values less than 0.05 are considered convergence failures and are filtered from the results.  These thresholds can be adjusted by the user using the prop.accepts.betas (minimum acceptance rate for regression coefficients to be considered converged), prop.accepts.alphas (minimum acceptance rate for dispersion paramters to be considered converged), and geweke.p (minimum Geweke p-value for a model paramter to be considered converged) arguments.  We do not suggest using values less than our defaults; more stringent convergence criteria may be used by increasing these values.  
+Importantly, the mcmseq.summary function also filters out genes that may not have converged. By default, genes with acceptance rates for regression coefficients or dispersions less than 10\% or FDR adjusted Geweke p-values less than 0.05 are considered convergence failures and are filtered from the results.  These thresholds can be adjusted by the user using the prop.accepts.betas (minimum acceptance rate for regression coefficients to be considered converged), prop.accepts.alphas (minimum acceptance rate for dispersion paramters to be considered converged), and geweke.p (minimum Geweke p-value for a model paramter to be considered converged) arguments.  We do not suggest using values less than our defaults; more stringent convergence criteria may be used by increasing these values.  
 
 ```{r}
 # Summarize results for the first contrast, on the log2 scale
@@ -323,28 +321,6 @@ dim(c1_table_filtered)
 head(c1_table_filtered)
 
 ```
-
-## What if the acceptance probability is low for a gene?
-You can determine which genes were filtered from results due to low acceptance probabilites by looking at the number of accepts.  In our example above no genes were filtered due to acceptance rates.  Below we determine which genes are outside of a more narrow acceptance range:
-```{r}
-# Create a more narrow acceptance range
-limits.dispersion <- c(0.15, 0.45)
-limits.betas <- c(0.3, 0.9)
-
-# Determine which genes are outside the dispersion accept range
-disp.id <- which( (fit.default$accepts_alphas/fit.default$n_it) < limits.dispersion[1] |
-         (fit.default$accepts_alphas/fit.default$n_it) > limits.dispersion[2])
-
-head(fit.default$gene_names[disp.id])
-
-# Coefficient accepts
-beta.id <- which( (fit.default$accepts_betas/fit.default$n_it) < limits.betas[1] |
-         (fit.default$accepts_betas/fit.default$n_it) > limits.betas[2])
-
-head(fit.default$gene_names[beta.id])
-
-```
-If features fail due to the dispersion parameter, try adjusting XXX and re-running mcmseq on the subset of genes that failed. If features fail due to the regression coefficients, try using a random walk proposal for the coefficients instead of the WLS method.
 
 
 ## An Example MCMSeq Analysis Using Custom Priors: Sharing Information Across Genes
