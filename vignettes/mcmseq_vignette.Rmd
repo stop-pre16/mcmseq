@@ -104,7 +104,7 @@ For random walk proposals, acceptance rates around 23\% are considered optimal. 
 | :---------------------- | :--------------------------------------------------- | :----------------|
 | prop.accepts.betas         | Minimum acceptance rate for regression coefficients to be considered converged. | 0.1 |
 | prop.accepts.alphas     | Minimum acceptance rate for dispersion parameters to be considered converged.  | 0.1|
-| geweke.p     | Minimum Geweke p-value for a paramter to be considered converged.  | 0.05|
+| geweke.p     | Minimum (FDR adjusted) Geweke p-value for a paramter to be considered converged.  | 0.05|
 
 The mcmseq.fit function returns information on genes that may have failed to converge.  By default, genes with acceptance rates for regression coefficients or dispersions less than 10\% or Geweke p-values less than 0.05 are flagged as convergence failures. These thresholds can be adjusted by the user using the prop.accepts.betas (minimum acceptance rate for regression coefficients to be considered converged), prop.accepts.alphas (minimum acceptance rate for dispersion paramters to be considered converged), and geweke.p (minimum Geweke p-value for a model paramter to be considered converged) arguments.  We do not suggest using values less than our defaults; more stringent convergence criteria may be used by increasing these values. 
 
@@ -141,7 +141,7 @@ which | character string or numeric indicator of which coefficient or contrast t
 | :---------------------- | :--------------------------------------------------- | :----------------|
 | prop.accepts.betas         | Minimum acceptance rate for regression coefficients to be considered converged. | 0.1 |
 | prop.accepts.alphas     | Minimum acceptance rate for dispersion parameters to be considered converged.  | 0.1|
-| geweke.p     | Minimum Geweke p-value for a paramter to be considered converged.  | 0.05|
+| geweke.p     | Minimum (FDR adjusted) Geweke p-value for a paramter to be considered converged.  | 0.05|
 
 By default, the mcmseq.summary function filters out genes that may have failed to converge. By default, genes with acceptance rates for regression coefficients or dispersions less than 10\% or Geweke p-values less than 0.05 are filtered from results. These thresholds can be adjusted by the user using the prop.accepts.betas (minimum acceptance rate for regression coefficients to be considered converged), prop.accepts.alphas (minimum acceptance rate for dispersion paramters to be considered converged), and geweke.p (minimum Geweke p-value for a model paramter to be considered converged) arguments.  We do not suggest using values less than our defaults; more stringent convergence criteria may be used by increasing these values. 
 
@@ -453,7 +453,7 @@ fit.default.glm <- mcmseq.fit(counts=counts.glm,
                        sample_data = metadata.glm,
                        random_intercept = NULL, 
                        gene_names = paste0('gene_', seq(1,1000,1)),
-                       contrast_mat = contrasts,
+                       contrast_mat = NULL,
                        contrast_names = NULL,
                        n_it = 1000,
                        prop_burn_in = 0.1
