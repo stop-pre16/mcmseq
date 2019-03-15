@@ -1404,13 +1404,13 @@ arma::mat whole_chain_nbglm_sum_cont(const arma::rowvec &counts,
                                      const int n_it,
                                      const double &prop_burn,
                                      const bool &return_cont){
-  int i = 1, accepts = 0, accepts_alphas = 0, inv_errors = 0, n_cont = 0;
+  int i = 1, accepts = 0, accepts_alphas = 0, inv_errors = 0, n_cont = 0, num_accept = 20;
   if(return_cont){
     n_cont = contrast_mat.n_cols;
   }
   double VIF = 1;
   //arma::mat ret(n_it, n_beta + 3, arma::fill::zeros);
-  arma::mat ret(n_beta + n_cont, 9, arma::fill::zeros);
+  arma::mat ret(n_beta + n_cont, 11, arma::fill::zeros);
   arma::mat betas_sample(n_it, n_beta), contrast_sample(n_it, n_cont);
   arma::rowvec betas_cur(n_beta), betas_last(n_beta);
   arma::vec disp_sample(n_it);
@@ -1444,8 +1444,23 @@ arma::mat whole_chain_nbglm_sum_cont(const arma::rowvec &counts,
                                                         i));
     betas_last = betas_cur;
     betas_sample.row(i) = betas_cur;
+    /*
+     * (betas_cur,
+     counts,
+    disp_sample(i-1),
+    mean_rho,
+    log_offset,
+    design_mat,
+    prior_sd_rs,
+    rw_sd_rs,
+    n_beta_tot,
+    n_sample,
+    i,
+    num_accept,
+    accepts_alpha);
+     */
 
-    disp_sample(i) = update_rho(betas_cur,
+    disp_sample(i) = update_rho_force(betas_cur,
                 counts,
                 disp_sample(i-1),
                 mean_rho,
@@ -1455,6 +1470,8 @@ arma::mat whole_chain_nbglm_sum_cont(const arma::rowvec &counts,
                 rw_sd_rs,
                 n_beta,
                 n_sample,
+                i,
+                num_accept,
                 accepts_alphas);
     i++;
   }
@@ -1488,6 +1505,44 @@ arma::mat whole_chain_nbglm_sum_cont(const arma::rowvec &counts,
     ret(k, 5) = (2.0 * idx_ops.n_elem) / (n_it_double - n_burn_in);
 
   }
+
+  // Calculating Geweke p-values for regression coefficients
+  arma::mat betas_nb = betas_sample.rows(burn_bound, n_it - 1);
+  arma::vec disp_nb = disp_sample.rows(burn_bound, n_it - 1);
+  int n_row_nb = betas_nb.n_rows, n_thin = 40;
+  arma::uvec idx_thin = arma::regspace<arma::uvec>(0, n_thin, n_row_nb-1);
+
+  betas_nb = betas_nb.rows(idx_thin);
+  disp_nb = arma::log(disp_nb.rows(idx_thin));
+  n_row_nb = betas_nb.n_rows;
+
+  int gub = round(n_row_nb * 0.2);
+  int glb = round(n_row_nb * 0.5);
+  double var_first, var_second, mean_first, mean_second, z_g;
+  double df_t;
+
+  for(int kk = 0; kk < n_beta; kk++){
+    var_first = arma::var(betas_nb.rows(0, gub - 1).col(kk)) / gub;
+    var_second = arma::var(betas_nb.rows(glb - 1, n_row_nb - 1).col(kk)) / (n_row_nb / 2.0);
+    mean_first = arma::mean(betas_nb.rows(0, gub - 1).col(kk));
+    mean_second = arma::mean(betas_nb.rows(glb, n_row_nb - 1).col(kk));
+    z_g = (mean_first - mean_second) / sqrt(var_first + var_second);
+    df_t = pow(var_first + var_second, 2) /
+      (pow(var_first, 2) / (gub - 1) + pow(var_second, 2) / ((n_row_nb / 2.0) - 1));
+    //ret(kk, 10) = 2.0 * R::pnorm5(fabs(z_g), 0, 1, 0, 0);
+    ret(kk, 9) = 2.0 * R::pt(fabs(z_g), df_t, 0, 0);
+  }
+
+  // Calculating Geweke p-values for dispersion
+  var_first = arma::var(disp_nb.rows(0, gub - 1)) / gub;
+  var_second = arma::var(disp_nb.rows(glb - 1, n_row_nb - 1)) / (n_row_nb / 2.0);
+  mean_first = arma::mean(disp_nb.rows(0, gub - 1));
+  mean_second = arma::mean(disp_nb.rows(glb, n_row_nb - 1));
+  z_g = (mean_first - mean_second) / sqrt(var_first + var_second);
+  df_t = pow(var_first + var_second, 2) /
+    (pow(var_first, 2) / (gub - 1) + pow(var_second, 2) / ((n_row_nb / 2.0) - 1));
+  //ret(kk, 10) = 2.0 * R::pnorm5(fabs(z_g), 0, 1, 0, 0);
+  ret(0, 10) = 2.0 * R::pt(fabs(z_g), df_t, 0, 0);
   return(ret);
 }
 
@@ -1572,7 +1627,7 @@ arma::cube mcmc_chain_glm_sum_cont_par(const arma::mat &counts,
   if(return_cont){
     n_cont = contrast_mat.n_cols;
   }
-  arma::cube upd_param(n_beta + n_cont, 9, counts.n_rows, arma::fill::zeros);
+  arma::cube upd_param(n_beta + n_cont, 11, counts.n_rows, arma::fill::zeros);
 
   whole_feature_sample_struct_glm_sum_cont mcmc_inst(counts,
                                                      log_offset,
@@ -1617,7 +1672,7 @@ arma::cube mcmc_chain_glm_sum_cont_par(const arma::mat &counts,
 //' @return
 //' Returns a list with a cube of regression parameters, and a matrix of dispersion values
 //'
-//' @export
+////' @export
 // [[Rcpp::export]]
 
 Rcpp::List nbglm_mcmc_wls(arma::mat counts,
@@ -1630,17 +1685,16 @@ Rcpp::List nbglm_mcmc_wls(arma::mat counts,
                           double rw_sd_rs,
                           arma::vec log_offset,
                           arma::mat starting_betas,
-                          int grain_size = 1,
                           double burn_in_prop = .1,
                           bool return_cont = false,
                           Rcpp::StringVector beta_names = NA_STRING,
                           Rcpp::StringVector cont_names = NA_STRING){
 
-  int n_beta = design_mat.n_cols, n_sample = counts.n_cols, n_gene = counts.n_rows, n_cont = 0;
+  int n_beta = design_mat.n_cols, n_sample = counts.n_cols, n_cont = 0;
   if(return_cont){
     n_cont = contrast_mat.n_rows;
   }
-  arma::cube ret(n_beta + n_cont, 8, n_gene);
+  arma::cube ret;
   int n_beta_start = starting_betas.n_cols;
   arma::mat starting_betas2(counts.n_rows, n_beta), cont_mat_trans = contrast_mat.t();
   starting_betas2.zeros();
@@ -1681,6 +1735,12 @@ Rcpp::List nbglm_mcmc_wls(arma::mat counts,
   Rcpp::colnames(betas_ret2) = names;
   Rcpp::rownames(betas_ret2) = beta_names;
 
+  arma::mat geweke_ret_beta, geweke_ret_alpha;
+
+  geweke_ret_beta = ret.tube(arma::span(0, n_beta - 1), arma::span(9));
+  geweke_ret_alpha = ret.tube(0, 10);
+  arma::mat ret_gwe = arma::join_horiz(geweke_ret_beta.t(), geweke_ret_alpha.t());
+
   if(return_cont){
     contrast_ret = ret.tube(arma::span(n_beta, n_beta + n_cont - 1), arma::span(0, 5));
     Rcpp::NumericVector contrast_ret2;
@@ -1691,13 +1751,15 @@ Rcpp::List nbglm_mcmc_wls(arma::mat counts,
                               Rcpp::Named("contrast_est") = contrast_ret2,
                               Rcpp::Named("alphas_est") = disp_ret,
                               Rcpp::Named("accepts_betas") = accepts_ret,
-                              Rcpp::Named("accepts_alphas") = accepts_ret_alphas);
+                              Rcpp::Named("accepts_alphas") = accepts_ret_alphas,
+                              Rcpp::Named("geweke_all") = ret_gwe);
   }
   else{
     return Rcpp::List::create(Rcpp::Named("betas_est") = betas_ret2,
                               Rcpp::Named("alphas_est") = disp_ret,
                               Rcpp::Named("accepts_betas") = accepts_ret,
-                              Rcpp::Named("accepts_alphas") = accepts_ret_alphas);
+                              Rcpp::Named("accepts_alphas") = accepts_ret_alphas,
+                              Rcpp::Named("geweke_all") = ret_gwe);
   }
 
 }
@@ -2078,7 +2140,7 @@ arma::cube mcmc_chain_par_sum_cont_pb(const arma::mat &counts,
 //' @return
 //' Returns a list with a cube of regression parameters, including random effects, a matrix of dispersion values, and a matrix of random intercept variances
 //'
-//' @export
+////' @export
 // [[Rcpp::export]]
 
 Rcpp::List nbglmm_mcmc_wls(arma::mat counts,
@@ -3657,7 +3719,7 @@ arma::cube mcmc_chain_par_sum_cont_pb_wc(const arma::mat &counts,
 //' @return
 //' Returns a list with a cube of regression parameters, including random effects, a matrix of dispersion values, and a matrix of random intercept variances
 //'
-//' @export
+////' @export
 // [[Rcpp::export]]
 
 Rcpp::List nbglmm_mcmc_wls_wc(arma::mat counts,
