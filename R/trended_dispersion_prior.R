@@ -25,7 +25,7 @@ trended.dispersion <- function(counts, span=1){# First calculate counts per mill
 
   # variance
   vars <- apply(normalized_counts, 1, var)
-  mom_dispersion <- (vars - exp(log_means))/(exp(log_means)^2)
+  mom_dispersion <- pmax((vars - exp(log_means))/(exp(log_means)^2), 1e-3)
 
   # Fit the Loess model
   m1 <- loess(log(mom_dispersion) ~ log_means, span=span)
