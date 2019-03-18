@@ -1042,8 +1042,9 @@ Rcpp::List nbglm_mcmc_rw(arma::mat counts,
     contrast_ret = ret.tube(arma::span(n_beta, n_beta + n_cont - 1), arma::span(0, 3));
     Rcpp::NumericVector contrast_ret2;
     contrast_ret2 = Rcpp::wrap(contrast_ret);
-    Rcpp::colnames(contrast_ret2) = names;
     Rcpp::rownames(contrast_ret2) = cont_names;
+    Rcpp::colnames(contrast_ret2) = names;
+
     return Rcpp::List::create(Rcpp::Named("betas_est") = betas_ret2,
                               Rcpp::Named("contrast_est") = contrast_ret2,
                               Rcpp::Named("alphas_est") = disp_ret,
@@ -1464,8 +1465,9 @@ Rcpp::List nbglmm_mcmc_rw(arma::mat counts,
     contrast_ret = ret.tube(arma::span(n_beta, n_beta + n_cont - 1), arma::span(0, 3));
     Rcpp::NumericVector contrast_ret2;
     contrast_ret2 = Rcpp::wrap(contrast_ret);
-    Rcpp::colnames(contrast_ret2) = names;
+
     Rcpp::rownames(contrast_ret2) = cont_names;
+    Rcpp::colnames(contrast_ret2) = names;
 
     return Rcpp::List::create(Rcpp::Named("betas_est") = betas_ret2,
                               Rcpp::Named("contrast_est") = contrast_ret2,
@@ -1852,8 +1854,10 @@ Rcpp::List nbglm_mcmc_wls(arma::mat counts,
     contrast_ret = ret.tube(arma::span(n_beta, n_beta + n_cont - 1), arma::span(0, 3));
     Rcpp::NumericVector contrast_ret2;
     contrast_ret2 = Rcpp::wrap(contrast_ret);
-    Rcpp::colnames(contrast_ret2) = names;
+
     Rcpp::rownames(contrast_ret2) = cont_names;
+    Rcpp::colnames(contrast_ret2) = names;
+
     return Rcpp::List::create(Rcpp::Named("betas_est") = betas_ret2,
                               Rcpp::Named("contrast_est") = contrast_ret2,
                               Rcpp::Named("alphas_est") = disp_ret,
@@ -2326,8 +2330,8 @@ Rcpp::List nbglmm_mcmc_wls(arma::mat counts,
     contrast_ret = ret.tube(arma::span(n_beta, n_beta + n_cont - 1), arma::span(0, 3));
     Rcpp::NumericVector contrast_ret2;
     contrast_ret2 = Rcpp::wrap(contrast_ret);
-    Rcpp::colnames(contrast_ret2) = names;
     Rcpp::rownames(contrast_ret2) = cont_names;
+    Rcpp::colnames(contrast_ret2) = names;
 
     return Rcpp::List::create(Rcpp::Named("betas_est") = betas_ret2,
                               Rcpp::Named("contrast_est") = contrast_ret2,
@@ -2762,8 +2766,8 @@ Rcpp::List nbglmm_mcmc_wls2(arma::mat counts,
     contrast_ret = ret.tube(arma::span(n_beta, n_beta + n_cont - 1), arma::span(0, 3));
     Rcpp::NumericVector contrast_ret2;
     contrast_ret2 = Rcpp::wrap(contrast_ret);
-    Rcpp::colnames(contrast_ret2) = names;
     Rcpp::rownames(contrast_ret2) = cont_names;
+    Rcpp::colnames(contrast_ret2) = names;
 
     return Rcpp::List::create(Rcpp::Named("betas_est") = betas_ret2,
                               Rcpp::Named("contrast_est") = contrast_ret2,
@@ -3147,8 +3151,8 @@ Rcpp::List nbglmm_mcmc_wls3(arma::mat counts,
     contrast_ret = ret.tube(arma::span(n_beta, n_beta + n_cont - 1), arma::span(0, 5));
     Rcpp::NumericVector contrast_ret2;
     contrast_ret2 = Rcpp::wrap(contrast_ret);
-    Rcpp::colnames(contrast_ret2) = names;
     Rcpp::rownames(contrast_ret2) = cont_names;
+    Rcpp::colnames(contrast_ret2) = names;
 
     return Rcpp::List::create(Rcpp::Named("betas_est") = betas_ret2,
                               Rcpp::Named("contrast_est") = contrast_ret2,
@@ -3535,8 +3539,8 @@ Rcpp::List nbglmm_mcmc_wls4(arma::mat counts,
     contrast_ret = ret.tube(arma::span(n_beta, n_beta + n_cont - 1), arma::span(0, 5));
     Rcpp::NumericVector contrast_ret2;
     contrast_ret2 = Rcpp::wrap(contrast_ret);
-    Rcpp::colnames(contrast_ret2) = names;
     Rcpp::rownames(contrast_ret2) = cont_names;
+    Rcpp::colnames(contrast_ret2) = names;
 
     return Rcpp::List::create(Rcpp::Named("betas_est") = betas_ret2,
                               Rcpp::Named("contrast_est") = contrast_ret2,
