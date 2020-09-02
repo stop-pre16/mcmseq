@@ -133,7 +133,8 @@ mcmseq.fit <- function(counts=NULL, # matrix of RNA-Seq counts where rows are ge
   if(is.null(log_offset)==F & (ncol(counts)==length(log_offset))==F ) {
     print("The log_offset vector and counts matrix indicate differing numbers of samples.
           The default log_offset will be calculated from the counts matrix.")
-    log_offset = log(apply(counts, 2, function(x) quantile(x, probs=0.75)/median(apply(counts,2,quantile, p = 0.75))))
+    # log_offset = log(apply(counts, 2, function(x) quantile(x, probs=0.75)/median(apply(counts,2,quantile, p = 0.75))))
+    log_offset = log(est_DESeq2_size_factors(counts))
   }
 
   if(is.null(prior_mean_log_alpha)==F & length(prior_mean_log_alpha)==1 ){
@@ -266,7 +267,8 @@ mcmseq.fit <- function(counts=NULL, # matrix of RNA-Seq counts where rows are ge
 
   # Offsets
   if(is.null(log_offset)==T) {
-    log_offset = log(apply(counts, 2, function(x) quantile(x, probs=0.75)/median(apply(counts,2,quantile, p = 0.75))))
+    # log_offset = log(apply(counts, 2, function(x) quantile(x, probs=0.75)/median(apply(counts,2,quantile, p = 0.75))))
+    log_offset = log(est_DESeq2_size_factors(counts))
   }
 
   # Gene Names
