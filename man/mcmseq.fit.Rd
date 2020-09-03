@@ -4,14 +4,31 @@
 \alias{mcmseq.fit}
 \title{Function to Fit MCMSeq Models}
 \usage{
-mcmseq.fit(counts = NULL, gene_names = NULL, fixed_effects = NULL,
-  sample_data = NULL, random_intercept = NULL, contrast_mat = NULL,
-  contrast_names = NULL, log_offset = NULL, proposal_method = "wls",
-  prior_sd_betas = 7, prior_u_re_var = 0.01, prior_v_re_var = 0.01,
-  prior_sd_log_alpha = 7, prior_mean_log_alpha = NULL, n_it = 1000,
-  rw_sd_log_alpha = 3, starting_betas = NULL, rw_sd_betas = 0.5,
-  prop_burn_in = 0.1, num_accept = 20L, prop.accepts.betas = c(0.1),
-  prop.accepts.alphas = c(0.1), geweke.p = 0.05)
+mcmseq.fit(
+  counts = NULL,
+  gene_names = NULL,
+  fixed_effects = NULL,
+  sample_data = NULL,
+  random_intercept = NULL,
+  contrast_mat = NULL,
+  contrast_names = NULL,
+  log_offset = NULL,
+  proposal_method = "wls",
+  prior_sd_betas = 7,
+  prior_u_re_var = 0.01,
+  prior_v_re_var = 0.01,
+  prior_sd_log_alpha = 7,
+  prior_mean_log_alpha = NULL,
+  n_it = 1000,
+  rw_sd_log_alpha = 3,
+  starting_betas = NULL,
+  rw_sd_betas = 0.5,
+  prop_burn_in = 0.1,
+  num_accept = 20L,
+  prop.accepts.betas = c(0.1),
+  prop.accepts.alphas = c(0.1),
+  geweke.p = 0.05
+)
 }
 \arguments{
 \item{counts}{A (G x N) numeric matrix or data frame of RNA-seq counts, with genes in rows and samples in columns. G = number of genes.  N = number of samples.}

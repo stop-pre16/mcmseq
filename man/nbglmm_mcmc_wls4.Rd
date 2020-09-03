@@ -4,12 +4,28 @@
 \alias{nbglmm_mcmc_wls4}
 \title{Negative Binomial GLMM fit for RNA-Seq expression using MCMC (contrast version)}
 \usage{
-nbglmm_mcmc_wls4(counts, design_mat, design_mat_re, contrast_mat,
-  prior_sd_betas, prior_sd_betas_a, prior_sd_betas_b, prior_sd_rs,
-  prior_mean_log_rs, n_it, rw_sd_rs, rw_sd_sigma, log_offset,
-  starting_betas, prop_burn_in = 0.1, tau = 10, num_accept = 20L,
-  return_cont = FALSE, beta_names = NA_character_,
-  cont_names = NA_character_)
+nbglmm_mcmc_wls4(
+  counts,
+  design_mat,
+  design_mat_re,
+  contrast_mat,
+  prior_sd_betas,
+  prior_sd_betas_a,
+  prior_sd_betas_b,
+  prior_sd_rs,
+  prior_mean_log_rs,
+  n_it,
+  rw_sd_rs,
+  rw_sd_sigma,
+  log_offset,
+  starting_betas,
+  prop_burn_in = 0.1,
+  tau = 10,
+  num_accept = 20L,
+  return_cont = FALSE,
+  beta_names = NA_character_,
+  cont_names = NA_character_
+)
 }
 \arguments{
 \item{counts}{A numeric matrix of RNA-Seq counts (rows are genes, columns are samples)}

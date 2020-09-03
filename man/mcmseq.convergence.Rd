@@ -4,8 +4,12 @@
 \alias{mcmseq.convergence}
 \title{Function to Check for Convergence Issues in the MCMC Chains}
 \usage{
-mcmseq.convergence(mcmseqModel, geweke.p = 0.05,
-  prop.accepts.betas = 0.1, prop.accepts.alphas = 0.1)
+mcmseq.convergence(
+  mcmseqModel,
+  geweke.p = 0.05,
+  prop.accepts.betas = 0.1,
+  prop.accepts.alphas = 0.1
+)
 }
 \arguments{
 \item{mcmseqModel}{A model fit with the mcmseq.fit function.}

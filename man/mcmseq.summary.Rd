@@ -4,10 +4,20 @@
 \alias{mcmseq.summary}
 \title{Function to Summarize MCMSeq Models}
 \usage{
-mcmseq.summary(mcmseqModel, summarizeWhat = "coefficient", which = 1,
-  prop.accepts.betas = c(0.1), prop.accepts.alphas = c(0.1),
-  geweke.p = 0.05, order_by = NULL, decreasing = NULL,
-  filter_by = NULL, gt = NULL, filter_val = NULL, log2 = FALSE)
+mcmseq.summary(
+  mcmseqModel,
+  summarizeWhat = "coefficient",
+  which = 1,
+  prop.accepts.betas = c(0.1),
+  prop.accepts.alphas = c(0.1),
+  geweke.p = 0.05,
+  order_by = NULL,
+  decreasing = NULL,
+  filter_by = NULL,
+  gt = NULL,
+  filter_val = NULL,
+  log2 = FALSE
+)
 }
 \arguments{
 \item{mcmseqModel}{mcmseq object fit using mcmseq.fit}

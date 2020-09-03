@@ -3,7 +3,6 @@
 \docType{package}
 \name{mcmseq-pkg}
 \alias{mcmseq-pkg}
-\alias{mcmseq-pkg-package}
 \title{mcmseq: Bayesian Hierarchical Negative Binomial Mixed Models for RNA-Seq}
 \description{
 Fitting utilities for estimating negative binomial generalized linear mixed models for use
