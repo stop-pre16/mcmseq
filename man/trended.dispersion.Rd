@@ -9,8 +9,7 @@ trended.dispersion(counts, span = 1)
 \arguments{
 \item{counts}{A (G x N) numeric matrix or data frame of RNA-seq counts, with genes in rows and samples in columns. G = number of genes.  N = number of samples.}
 
-\item{span}{An optional numeric paramter that controls the degree of smoothing.  Defaults to 1.  Higher values result in a smoother curve.
-#'}
+\item{span}{An optional numeric paramter that controls the degree of smoothing.  Defaults to 1.  Higher values result in a smoother curve.}
 }
 \value{
 A list including prior_mean_log_alpha and prior_sd_log_alpha which can be used in the mcmseq.fit function. A plot showing the loess fit is also generated.
@@ -19,6 +18,12 @@ A list including prior_mean_log_alpha and prior_sd_log_alpha which can be used i
 Fits loess regression to naive estimates of log(dispersion) vs. log(mean counts) to develop gene-specific priors for the dispersion parameters.
 }
 \examples{
+data("simdata")
+counts <- simdata$counts[1:10,]
+
+##Develop the trended dispersion prior
+disp.prior <- trended.dispersion(counts, span=1)
+
 
 
 }

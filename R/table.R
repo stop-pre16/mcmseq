@@ -14,10 +14,65 @@
 #' @param gt logical (TRUE or FALSE) or vector of logicals indicating if values greater than filter_val(s) should be excluded from the results table.
 #' @param filter_val numeric variable or vector indicating the threshold for filtering based on the variable(s) in filter_by
 #' @param log2 logical (TRUE or FALSE) indicating if log2 scale should be used (instead of natural log scale)
-#' #'
+#'
 #' @return An MCMSeq Summary Table
 #'
 #' @examples
+#'##Fit model
+#'data("simdata")
+#'metadata <- simdata$metadata
+#'counts <- simdata$counts[1:10,]
+#'f <- ~ group*time
+#'contrasts <- rbind(c(0,1,0,1), # group + group:time
+#'                   c(0,0,1,1))  # time + group:time
+#'rownames(contrasts) <- c("Treatment_v_Control_at_FollowUp",
+#'                         "FollowUp_v_Baseline_in_Treatment")
+#'fit.default <- mcmseq.fit(counts=counts,
+#'                          fixed_effects = f,
+#'                          sample_data = metadata,
+#'                          random_intercept = 'ids',
+#'                          gene_names = paste0('gene_', seq(1,10,1)),
+#'                          contrast_mat = contrasts,
+#'                          contrast_names = NULL,
+#'                          n_it = 1000,
+#'                          prop_burn_in = 0.1)
+#'
+#'##Summarize results for the first contrast, on the log2 scale
+#'c1_table <- mcmseq.summary(mcmseqModel = fit.default,
+#'                           summarizeWhat="contrast",
+#'                           which = "Treatment_v_Control_at_FollowUp",
+#'                           log2=TRUE)
+#'
+#'
+#'##Filter out genes with effect sizes less than 1 and BH adjusted p-values > 0.1
+#'##Order results by BH adjusted p-value
+#'c1_table_filtered <- mcmseq.summary(mcmseqModel = fit.default,
+#'                                    summarizeWhat="contrast",
+#'                                    which = "Treatment_v_Control_at_FollowUp",
+#'                                    prop.accepts.betas = c(0.1,1),
+#'                                    prop.accepts.alphas  = c(0.1,0.7),
+#'                                    order_by = "BH_adjusted_pval",
+#'                                    decreasing = FALSE,
+#'                                    filter_by = c("BH_adjusted_pval", "posterior_median_abs"),
+#'                                    filter_val = c(0.1, 1),
+#'                                    gt = c(FALSE, TRUE),
+#'                                    log2=TRUE)
+#'
+#'##Do the same for the group coefficient which represnts the difference
+#'##between treatment and control at baseline
+#'group_table_filtered <- mcmseq.summary(mcmseqModel = fit.default,
+#'                                       summarizeWhat="coefficient",
+#'                                       which = "group",
+#'                                       prop.accepts.betas = c(0.1,1),
+#'                                       prop.accepts.alphas  = c(0.1,0.7),
+#'                                       order_by = "BH_adjusted_pval",
+#'                                       decreasing = FALSE,
+#'                                       filter_by = c("BH_adjusted_pval", "posterior_median_abs"),
+#'                                       filter_val = c(0.1, 1),
+#'                                       gt = c(FALSE, TRUE),
+#'                                       log2=TRUE)
+#'
+#'
 #'
 #'
 #' @export
@@ -56,7 +111,7 @@ mcmseq.summary <- function(mcmseqModel, # mcmseq object fit using mcmseq.fit
   geneNames<-mcmseqModel$gene_names
 
   # Use the convergence check function to remove genes that failed to converge
-  failed <- mcmseq.covergence(mcmseqModel,
+  failed <- mcmseq.convergence(mcmseqModel,
                               prop.accepts.betas=prop.accepts.betas,
                               prop.accepts.alphas = prop.accepts.alphas,
                               geweke.p = geweke.p

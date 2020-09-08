@@ -4,10 +4,16 @@
 #'
 #' @param counts A (G x N) numeric matrix or data frame of RNA-seq counts, with genes in rows and samples in columns. G = number of genes.  N = number of samples.
 #' @param span An optional numeric paramter that controls the degree of smoothing.  Defaults to 1.  Higher values result in a smoother curve.
-#' #'
+#'
 #' @return A list including prior_mean_log_alpha and prior_sd_log_alpha which can be used in the mcmseq.fit function. A plot showing the loess fit is also generated.
 #'
 #' @examples
+#' data("simdata")
+#'counts <- simdata$counts[1:10,]
+#'
+#'##Develop the trended dispersion prior
+#'disp.prior <- trended.dispersion(counts, span=1)
+#'
 #'
 #'
 #' @export
@@ -31,7 +37,7 @@ trended.dispersion <- function(counts, span=1){# First calculate counts per mill
   m1 <- loess(log(mom_dispersion) ~ log_means, span=span)
 
   # Get predicted values for log(dispersion)
-  m1.predictions <- predict(m1,log_means)
+  m1.predictions <- predict(m1, log_means)
 
   # Save the SD of the residuals
   sd_res <- sd(m1$residuals)

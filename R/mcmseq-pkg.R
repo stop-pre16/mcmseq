@@ -8,6 +8,11 @@
 #' @importFrom Rcpp sourceCpp
 #' @importFrom Rcpp evalCpp
 #' @importFrom RcppParallel RcppParallelLibs
+#' @importFrom stats terms
+#' @importFrom stats quantile
+#' @importFrom stats median
+#' @importFrom stats model.matrix
+#' @importFrom stats p.adjust
 #' @useDynLib mcmseq
 #'
 #' @docType package

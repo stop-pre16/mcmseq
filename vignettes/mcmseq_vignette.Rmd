@@ -1,6 +1,6 @@
 ---
 title: "An Introduction to MCMSeq"
-author: "Camille M. Moore"
+author: "Camille M. Moore, Brian E. Vestal, Elizabeth Wynn"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
@@ -59,9 +59,9 @@ The two main functions in the mcmseq package are mcmseq.fit, which is used to fi
 | random_intercept         | An optional character string indicating the name of the clustering variable in sample_data to use as a random intercept. | NULL | 
 | contrast_mat         | An optional C x P numeric matrix of linear contrasts to test, where C is the number of contrasts and P is the number of fixed effects parameters in the model.  Each row is a contrast. | NULL |  
 | contrast_names     | An optional character vector of contrast names (length C).   | rownames of the contrast matrix|
-| log_offset   | A vector of offsets (on the linear predictor/natural log scale) to account for differences in sequencing depth between samples.  |ln(75th percentile of counts for sample i) / median(ln(75th percentile of counts) across all samples) | 
+| log_offset   | A vector of offsets (on the linear predictor/natural log scale) to account for differences in sequencing depth between samples.  |ln(DESeq2 size factors) for all samples| 
 
-As a default, an offset is included to account for sequencing depth.  We calculate the offset for subject $i$ at observation $j$ as $\rho_{ij} = \frac{Q^{75}_{ij}}{\text{median}_{rs} (Q^{75}_{rs})}$, where $Q^{75}_{ij}$ is the 75$^{th}$ percentile of counts across genes for subject $i$ at observation $j$.  Other choices might include the total library size for an observation, the median of ratios method from DESeq2 or the trimmed mean of M values from EdgeR.
+As a default, an offset is included to account for sequencing depth.  We calculate the offset for subject $i$ at observation $j$ as the natural log of the DESeq2 size factor for subject $i$ at observation $j$.  This was the only option tested (others included total library size, 75th percentile of counts, and edgeR's method) that maintained nominal error rate performance.
 
 #### _Choice of Priors and Prior Distribution Options_
 
@@ -329,7 +329,6 @@ First we run the trended.dispersion function.
 ```{r}
 # Develop the trended dispersion prior
 disp.prior <- trended.dispersion(counts, span=1)
-
 ```
 
 We inspect the plot to determine if the smoothing paramter (span) for the loess regression should be adjusted.  Higher values result in more smoothing.  Once we are satisfied with the regression model, we fit the mcmcseq model as usual, using the prior mean and SD from the trended dispersion function.
@@ -348,7 +347,6 @@ fit.custom <- mcmseq.fit(counts=counts,
                        n_it = 1000,
                        prop_burn_in = 0.1
 )
-
 ```
 
 We can summarize the results as usual.
@@ -360,11 +358,8 @@ c1_table_custom <- mcmseq.summary(mcmseqModel = fit.custom,
                  which = "Treatment_v_Control_at_FollowUp",
                   log2=TRUE 
             )
-
 dim(c1_table_custom)
-
 head(c1_table_custom)
-
 # Filter out genes with effect sizes less than 1 and BH adjusted p-values > 0.05
 # Order results by BH adjusted p-value
 c1_table_custom_filtered <- mcmseq.summary(mcmseqModel = fit.custom, 
@@ -379,11 +374,8 @@ c1_table_custom_filtered <- mcmseq.summary(mcmseqModel = fit.custom,
                  gt = c(FALSE, TRUE),
                   log2=TRUE 
             )
-
 dim(c1_table_custom_filtered)
-
 head(c1_table_custom_filtered)
-
 
 ```
 

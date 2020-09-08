@@ -4,14 +4,31 @@
 \alias{mcmseq.fit}
 \title{Function to Fit MCMSeq Models}
 \usage{
-mcmseq.fit(counts = NULL, gene_names = NULL, fixed_effects = NULL,
-  sample_data = NULL, random_intercept = NULL, contrast_mat = NULL,
-  contrast_names = NULL, log_offset = NULL, proposal_method = "wls",
-  prior_sd_betas = 7, prior_u_re_var = 0.01, prior_v_re_var = 0.01,
-  prior_sd_log_alpha = 7, prior_mean_log_alpha = NULL, n_it = 1000,
-  rw_sd_log_alpha = 3, starting_betas = NULL, rw_sd_betas = 0.5,
-  prop_burn_in = 0.1, num_accept = 20L, prop.accepts.betas = c(0.1),
-  prop.accepts.alphas = c(0.1), geweke.p = 0.05)
+mcmseq.fit(
+  counts = NULL,
+  gene_names = NULL,
+  fixed_effects = NULL,
+  sample_data = NULL,
+  random_intercept = NULL,
+  contrast_mat = NULL,
+  contrast_names = NULL,
+  log_offset = NULL,
+  proposal_method = "wls",
+  prior_sd_betas = 7,
+  prior_u_re_var = 0.01,
+  prior_v_re_var = 0.01,
+  prior_sd_log_alpha = 7,
+  prior_mean_log_alpha = NULL,
+  n_it = 1000,
+  rw_sd_log_alpha = 3,
+  starting_betas = NULL,
+  rw_sd_betas = 0.5,
+  prop_burn_in = 0.1,
+  num_accept = 20L,
+  prop.accepts.betas = c(0.1),
+  prop.accepts.alphas = c(0.1),
+  geweke.p = 0.05
+)
 }
 \arguments{
 \item{counts}{A (G x N) numeric matrix or data frame of RNA-seq counts, with genes in rows and samples in columns. G = number of genes.  N = number of samples.}
@@ -68,6 +85,35 @@ An MCMSeq Object
 Fits negative binomial generlized linear models and negative binomial generalized linear mixed models to RNA-Seq data using MCMC.
 }
 \examples{
+data("simdata")
+metadata <- simdata$metadata
+
+##Only including 10 genes in the counts matrix
+counts <- simdata$counts[1:10,]
+
+##Create the fixed effects model formula
+f <- ~ group*time
+##Create the contrast matrix
+contrasts <- rbind(c(0,1,0,1), # group + group:time
+                  c(0,0,1,1))  # time + group:time
+
+
+##Name the contrasts by specifying rownames
+rownames(contrasts) <- c("Treatment_v_Control_at_FollowUp",
+                        "FollowUp_v_Baseline_in_Treatment")
+
+##Fit the Model
+fit.default <- mcmseq.fit(counts=counts,
+                         fixed_effects = f,
+                         sample_data = metadata,
+                         random_intercept = 'ids',
+                         gene_names = paste0('gene_', seq(1,10,1)),
+                         contrast_mat = contrasts,
+                         contrast_names = NULL,
+                         n_it = 1000,
+                         prop_burn_in = 0.1)
+
+
 
 
 }

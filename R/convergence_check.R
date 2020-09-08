@@ -6,16 +6,36 @@
 #' @param geweke.p The p-value for the Geweke statistic that should be used to determine convergence.  By default Geweke p-values less than 0.05 for any parameter are considered convergence failures.
 #' @param prop.accepts.betas The acceptance rate for regression coefficients below which the model is considered a convergence failure. Default is 0.1.
 #' @param prop.accepts.alphas The acceptance rate for dispersion parameters below which the model is considered a convergence failure. Default is 0.1.
-#' #'
+#'
 #' @return A data frame including Geweke statistic and acceptance rates for genes that failed to converge.
 #'
 #' @examples
+#' data("simdata")
+#'metadata <- simdata$metadata
+#'
+#'##Only including 10 genes in the counts matrix
+#'counts <- simdata$counts[1:10,]
+#'
+#'##Create the fixed effects model formula
+#'f <- ~ group*time
+#'
+#'##Fit model
+#'fit.default <- mcmseq.fit(counts=counts,
+#'                          fixed_effects = f,
+#'                          sample_data = metadata,
+#'                          random_intercept = 'ids',
+#'                          gene_names = paste0('gene_', seq(1,10,1)),
+#'                          n_it = 1000,
+#'                          prop_burn_in = 0.1)
+#'
+#'##Check convergence
+#'fit.converge<-mcmseq.convergence(fit.default)
 #'
 #'
 #' @export
 #'
 
-mcmseq.covergence <- function(mcmseqModel,
+mcmseq.convergence <- function(mcmseqModel,
                               geweke.p=0.05,
                               prop.accepts.betas = 0.1,
                               prop.accepts.alphas = 0.1){
