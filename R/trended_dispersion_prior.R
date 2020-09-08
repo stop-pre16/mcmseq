@@ -42,7 +42,7 @@ trended.dispersion <- function(counts, span=1){# First calculate counts per mill
   # Save the SD of the residuals
   sd_res <- sd(m1$residuals)
 
-  # Plot the predicted values.  If the line is too wiggly, increase the span argument
+  # Plot the predicted values...If the line is too wiggly, increase the span argument
   # in the loess function above.
   plot(log_means, log(mom_dispersion), type="p", ylab = "ln(MOM Dispersion Estimate)",
        xlab = "ln(Mean Counts)")

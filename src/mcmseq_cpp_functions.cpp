@@ -2363,7 +2363,6 @@ Rcpp::List nbglmm_mcmc_wls(arma::mat counts,
 
 
 
-
 //   Function to run an entire chain for one feature (improrper prior prior on rand int. variance proportional to 1/sigma)
 arma::mat whole_chain_nbglmm_sum_cont_pb2(const arma::rowvec &counts,
                                           const arma::vec &log_offset,
@@ -3894,3 +3893,4 @@ Rcpp::List nbglmm_mcmc_wls_wc(arma::mat counts,
     return Rcpp::List::create(Rcpp::Named("ret") = ret);
   }
 }
+
