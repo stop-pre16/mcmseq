@@ -1,8 +1,8 @@
 Package: mcmseq
 Type: Package
 Title: Negative Binomial GLM and GLMM using MCMC
-Version: 0.4.02
-Author: Brian Vestal
+Version: 1.0.0
+Author: Brian Vestal, Camille Moore, Elizabeth Wynn
 Maintainer: Brian Vestal <vestalb@njhealth.org>
 Description: A set of MCMC samplers for NB GLM or GLMM.  These were specifically designed for use with RNA-Seq data.
 License: GPL-2
