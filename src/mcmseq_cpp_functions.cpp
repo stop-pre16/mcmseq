@@ -2364,7 +2364,7 @@ Rcpp::List nbglmm_mcmc_wls(arma::mat counts,
 
 
 
-//   Function to run an entire chain for one feature
+//   Function to run an entire chain for one feature (improrper prior prior on rand int. variance proportional to 1/sigma)
 arma::mat whole_chain_nbglmm_sum_cont_pb2(const arma::rowvec &counts,
                                           const arma::vec &log_offset,
                                           const arma::rowvec &starting_betas,
@@ -2659,7 +2659,7 @@ arma::cube mcmc_chain_par_sum_cont_pb2(const arma::mat &counts,
 //'
 //' Estimate Negative Binomial regressioin coefficients, dispersion parameter, and random intercept variance using MCMC with a weighted least squares proposal
 //'
-//' This function estimates regression parameters and ...
+//' This function estimates regression parameters using an improper prior on random intercept variance (proportional to 1/sigma)
 //'
 //'
 //'
@@ -2685,7 +2685,7 @@ arma::cube mcmc_chain_par_sum_cont_pb2(const arma::mat &counts,
 //' Returns a list with a cube of regression parameters, including random effects, a matrix of dispersion values, and a matrix of random intercept variances
 //'
 //' @export
-// [[Rcpp::export]]
+//// [[Rcpp::export]]
 
 Rcpp::List nbglmm_mcmc_wls2(arma::mat counts,
                             arma::mat design_mat,
@@ -2800,7 +2800,7 @@ Rcpp::List nbglmm_mcmc_wls2(arma::mat counts,
 
 
 
-//   Function to run an entire chain for one feature
+//   Function to run an entire chain for one feature (half cauchy prior on rand int. variance)
 arma::mat whole_chain_nbglmm_sum_cont_pb3(const arma::rowvec &counts,
                                           const arma::vec &log_offset,
                                           const arma::rowvec &starting_betas,
@@ -3049,7 +3049,7 @@ arma::cube mcmc_chain_par_sum_cont_pb3(const arma::mat &counts,
 //'
 //' Estimate Negative Binomial regressioin coefficients, dispersion parameter, and random intercept variance using MCMC with a weighted least squares proposal
 //'
-//' This function estimates regression parameters and ...
+//' This function estimates regression parameters using a half-Cauchy prior on random intercept variance
 //'
 //'
 //'
@@ -3074,7 +3074,7 @@ arma::cube mcmc_chain_par_sum_cont_pb3(const arma::mat &counts,
 //' @return
 //' Returns a list with a cube of regression parameters, including random effects, a matrix of dispersion values, and a matrix of random intercept variances
 //'
-//' @export
+////' @export
 // [[Rcpp::export]]
 
 Rcpp::List nbglmm_mcmc_wls3(arma::mat counts,
@@ -3182,7 +3182,7 @@ Rcpp::List nbglmm_mcmc_wls3(arma::mat counts,
 
 
 
-//   Function to run an entire chain for one feature
+//   Function to run an entire chain for one feature (half cauchy on rand. int. var. and dispersion)
 arma::mat whole_chain_nbglmm_sum_cont_pb4(const arma::rowvec &counts,
                                           const arma::vec &log_offset,
                                           const arma::rowvec &starting_betas,
@@ -3437,7 +3437,7 @@ arma::cube mcmc_chain_par_sum_cont_pb4(const arma::mat &counts,
 //'
 //' Estimate Negative Binomial regressioin coefficients, dispersion parameter, and random intercept variance using MCMC with a weighted least squares proposal
 //'
-//' This function estimates regression parameters and ...
+//' This version uses a half-Cauchy prior for both random intercept variance and NB dispersion
 //'
 //'
 //'
@@ -3462,7 +3462,7 @@ arma::cube mcmc_chain_par_sum_cont_pb4(const arma::mat &counts,
 //' @return
 //' Returns a list with a cube of regression parameters, including random effects, a matrix of dispersion values, and a matrix of random intercept variances
 //'
-//' @export
+////' @export
 // [[Rcpp::export]]
 
 Rcpp::List nbglmm_mcmc_wls4(arma::mat counts,
@@ -3792,7 +3792,7 @@ arma::cube mcmc_chain_par_sum_cont_pb_wc(const arma::mat &counts,
 //'
 //' Estimate Negative Binomial regressioin coefficients, dispersion parameter, and random intercept variance using MCMC with a weighted least squares proposal
 //'
-//' This function estimates regression parameters and ...
+//' This function estimates regression parameters and returns the entire chain instead of just posterior summaires
 //'
 //'
 //'
