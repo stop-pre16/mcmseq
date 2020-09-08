@@ -322,14 +322,13 @@ head(c1_table_filtered)
 
 
 ## An Example MCMSeq Analysis Using Custom Priors: Sharing Information Across Genes
-It is possible to share information across genes via the prior distribution for the dispersion parameters. For convenience the trended.dispersion function can be used to develop a prior that takes into account potential mean dispersion relationships.  The function first normalizes counts to adjust for differences in sequencing depth between samples by scaling all samples to the median library size. The mean normalized counts are then calculated for each gene and the method of moments is used to obtain a naive estimate of the dispersion parameter.  A loess curve is then fit to describe the relationship between the log(mean counts) and the log(dispersion).  Predictions from this curve can be used as prior means for the log normal prior on the dispersion paramter for each gene.  The residual standard error of the model can be used for the prior standard deviation  
+It is possible to share information across genes via the prior distribution for the dispersion parameters. For convenience the trended.dispersion function can be used to develop a prior that takes into account potential mean dispersion relationships.  The function first normalizes counts to adjust for differences in sequencing depth between samples by scaling all samples to the median library size. The mean normalized counts are then calculated for each gene and the method of moments is used to obtain a naive estimate of the dispersion parameter.  A loess curve is then fit to describe the relationship between the log(mean counts) and the log(dispersion).  Predictions from this curve can be used as prior means for the log normal prior on the dispersion paramter for each gene.  The residual standard error of the model, potentially multiplied by a variance inflation factor, can be used for the prior standard deviation  
 
 First we run the trended.dispersion function.
 
 ```{r}
 # Develop the trended dispersion prior
 disp.prior <- trended.dispersion(counts, span=1)
-
 ```
 
 We inspect the plot to determine if the smoothing paramter (span) for the loess regression should be adjusted.  Higher values result in more smoothing.  Once we are satisfied with the regression model, we fit the mcmcseq model as usual, using the prior mean and SD from the trended dispersion function.
@@ -344,11 +343,10 @@ fit.custom <- mcmseq.fit(counts=counts,
                        contrast_mat = contrasts,
                        contrast_names = NULL,
                        prior_mean_log_alpha = disp.prior$prior_mean_log_alpha,
-                       prior_sd_log_alpha = disp.prior$prior_sd_log_alpha,
+                       prior_sd_log_alpha = 2 * disp.prior$prior_sd_log_alpha,
                        n_it = 1000,
                        prop_burn_in = 0.1
 )
-
 ```
 
 We can summarize the results as usual.
@@ -360,11 +358,8 @@ c1_table_custom <- mcmseq.summary(mcmseqModel = fit.custom,
                  which = "Treatment_v_Control_at_FollowUp",
                   log2=TRUE 
             )
-
 dim(c1_table_custom)
-
 head(c1_table_custom)
-
 # Filter out genes with effect sizes less than 1 and BH adjusted p-values > 0.05
 # Order results by BH adjusted p-value
 c1_table_custom_filtered <- mcmseq.summary(mcmseqModel = fit.custom, 
@@ -379,11 +374,8 @@ c1_table_custom_filtered <- mcmseq.summary(mcmseqModel = fit.custom,
                  gt = c(FALSE, TRUE),
                   log2=TRUE 
             )
-
 dim(c1_table_custom_filtered)
-
 head(c1_table_custom_filtered)
-
 
 ```
 

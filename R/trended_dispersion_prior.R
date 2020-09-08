@@ -37,7 +37,7 @@ trended.dispersion <- function(counts, span=1){# First calculate counts per mill
   m1 <- loess(log(mom_dispersion) ~ log_means, span=span)
 
   # Get predicted values for log(dispersion)
-  m1.predictions <- predict(m1)
+  m1.predictions <- predict(m1, log_means)
 
   # Save the SD of the residuals
   sd_res <- sd(m1$residuals)
@@ -49,4 +49,4 @@ trended.dispersion <- function(counts, span=1){# First calculate counts per mill
   lines(m1.predictions[order(log_means)], x=log_means[order(log_means)], col="red")
 
   return (list(prior_mean_log_alpha = m1.predictions, prior_sd_log_alpha = sd_res))
-  }
+}
