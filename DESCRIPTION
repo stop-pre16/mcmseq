@@ -15,7 +15,7 @@ LinkingTo: Rcpp,
         RcppParallel
 SystemRequirements: GNU make
 URL: https//github.com/stop-pre16/mcmseq
-RoxygenNote: 7.1.0
+RoxygenNote: 7.1.1
 Suggests: 
     knitr,
     rmarkdown

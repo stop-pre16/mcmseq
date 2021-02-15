@@ -1,0 +1,454 @@
+---
+title: "An Introduction to MCMSeq"
+author: "Camille M. Moore"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{An Introduction to MCMSeq}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+As the cost of sequencing decreases, the complexity and size of RNA-Seq experiments are rapidly growing. In particular, paired, longitudinal and other correlated study designs are becoming commonplace.  However, the tools available to analyze these more complex study design are limited. 
+
+It is well known that failing to account for correlation between repeated outcome measurements can result in misleading inferences. For example, when estimating changes in gene expression over time, if there is strong within subject correlation, estimated standard errors will be too large if correlation is ignored, reducing power to detect differential expression over time. Attempting to analyze correlated RNA-Seq data with DESeq2 or edgeR by including all levels of the clustering variable as fixed effects in the regression model can also be problematic. In this case, the number of parameters necessary to account for correlation is equal to the number of subjects or clusters. This may result in a model that is too complex for the number of observations in the study, leading to overfitting. When overfitting is present, some of the findings of the analysis come from fitting noise, resulting in spurious associations and results that cannot be reproduced in future studies. Cui et al (2016) also noted that this strategy led to inflated false positive rates. In addition, if a regression parameter for each subject is included in a model, other effects of interest may not be estimable. For example, in a study comparing gene expression between two groups over time, differences between groups at individual time points can not be estimated.
+
+MCMSeq uses a Bayesian hierarchical negative binomial model to account for correlation in clustered and longitudinal RNA-Seq experiments. This model allows for the inclusion of random effects that can be used to account for correlation. If desired, information can be borrowed across genes when developing the prior for the dispersion parameter, a practice we found improved error rates. The model is fit using Markov-chain Monte Carlo (MCMC) methods, which can be compuationally intensive.  The MCMSeq algorithm has been optimized in C++ and can be run in parallel to speed computation time.
+
+## Model Specification
+Similar to other commonly used RNA-Seq analysis tools, we model the observed RNA-Seq count data with a negative binomial distribution with a log link function.  To account for correlation, we allow a random intercept to be included in the model. Let $Y_{gij}$ be the expression of gene $g$ from subject $i$ at time point or observation $j$, then
+\begin{eqnarray}
+\label{eqn:glmm}
+Y_{gij} &\sim& \mathcal{NB}(\mu_{gij}, \alpha_g) \\
+\log(\mu_{gij}) &=& X_{ij}\boldsymbol{\beta_g} + b_{gi} + \rho_{ij}\\
+{b_{gi}} &\sim& \mathcal{N}(0, \sigma_g^2)
+\end{eqnarray}
+where $\mu_{gij}$ is the mean expression of gene $g$ in subject $i$ at observation $j$ and $\alpha_g$ is the dispersion parameter for gene $g$, which is related to the variance of $Y_{gij}$ by Var($Y_{gij}$) = $\mu_{gij} + \alpha_g \mu_{gij}^2$. $\boldsymbol{\beta_g}$ is a $p$ by 1 vector of fixed effect regression coefficients for gene $g$, $X_{ij}$ is a row vector of fixed effects covariates for subject $i$ at observation $j$, $b_{gi}$ is a random intercept for gene $g$ and subject $i$, and $\rho_{ij}$ is an offset for subject $i$ at observation $j$, which can be used to account for differences in sequencing depth between samples. We assume that for each gene, the subject-specific random intercept is normally distributed with mean 0 and variance $\sigma_g^2$. 
+
+The Bayesian hierarchical model is completed by specifying priors (and hyper-priors) for $\boldsymbol{\beta_g}$, $\sigma_g^2$, and $\alpha_g$:
+\begin{eqnarray*}
+\boldsymbol{\beta_g} &\sim& \mathcal{MVN}(M_g, I_p s^2) \\
+%b_{gi} &\sim& \mathcal{N}(0, \Sigma_{g}) \\
+\sigma_g^2 &\sim& \mathcal{IG}(U, V) \\
+\log(\alpha_g) &\sim& \mathcal{N}(A_g, B) 
+\end{eqnarray*}
+where $M_g$ is a vector of length $p$ containing the prior means for the fixed effect regression coefficients for gene $g$, $I$ is a $p$ x $p$ Identity matrix, $s^2$ is the prior variance for the fixed effect coefficients, $\mathcal{MVN}$ is the multivariate normal distribution, and $\mathcal{IG}$ is the inverse Gamma distribution with parameters $U$ and $V$. We use a log normal prior for the dispersion paramters, $alpha_g$, with prior mean $A$ and prior variance $B$.   
+
+## Overview of Functions in the mcmseq Package
+The two main functions in the mcmseq package are mcmseq.fit, which is used to fit mcmseq models, and mcmseq.summary, which is used to calculate Benjamini-Hochberg adjusted p-values and to order and filter results into tables.  Each function has several required arguments and options which are described below. 
+
+### mcmseq.fit
+#### _Required Arguments_
+
+| Argument       | Description | 
+| :-------------- | :---------------------------------------------------| 
+| counts         | Matrix of RNA-Seq counts.  Rows are samples and columns are genes. |        
+| fixed_effects  | One sided formula specifying the fixed effects in the model | 
+| sample_data    | Data frame containing information on the samples.  Rows are samples and should be listed in the same order as columns of the counts matrix.  Variables listed in the fixed_effects formula and random_intercept option should be included as columns in the sample_data.        
+
+#### _Accounting for Sequencing Depth and Other Model Specification Options_
+
+| Option               | Description                                         | Default |
+| :---------------------- | :--------------------------------------------------- | :----------------|
+| random_intercept         | An optional character string indicating the name of the clustering variable in sample_data to use as a random intercept. | NULL | 
+| contrast_mat         | An optional C x P numeric matrix of linear contrasts to test, where C is the number of contrasts and P is the number of fixed effects parameters in the model.  Each row is a contrast. | NULL |  
+| contrast_names     | An optional character vector of contrast names (length C).   | rownames of the contrast matrix|
+| log_offset   | A vector of offsets (on the linear predictor/natural log scale) to account for differences in sequencing depth between samples.  |ln(75th percentile of counts for sample i) / median(ln(75th percentile of counts) across all samples) | 
+
+As a default, an offset is included to account for sequencing depth.  We calculate the offset for subject $i$ at observation $j$ as $\rho_{ij} = \frac{Q^{75}_{ij}}{\text{median}_{rs} (Q^{75}_{rs})}$, where $Q^{75}_{ij}$ is the 75$^{th}$ percentile of counts across genes for subject $i$ at observation $j$.  Other choices might include the total library size for an observation, the median of ratios method from DESeq2 or the trimmed mean of M values from EdgeR.
+
+#### _Choice of Priors and Prior Distribution Options_
+
+| Option               | Description                                         | Default |
+| :---------------------- | :--------------------------------------------------- | :----------------|
+| prior_sd_betas         | Prior standard deviation for the fixed and random effect regression coefficients. | 7 |        
+| prior_u_re_var         | U paramater for the inverse gamma prior for the random effect variance | 0.01 | 
+| prior_v_re_var         | V paramater for the inverse gamma prior for the random effect variance | 0.01 |  
+| prior_sd_log_alpha     | Standard deviation for the log normal prior for dispersion paramters.  | 7|
+| prior_mean_log_alpha   | Mean of the log normal prior for dispersion paramters. Note a unqiue value can be specified for each gene.  |-log(7) for all genes| 
+| gene_names              | a vector of gene names (the length of the number of rows in the counts matrix) | row names of the counts matrix|
+
+The the prior mean for the intercept (first element of $M_g$) is set to be the log of the mean number of counts across samples for that gene; prior means for all other coefficients are 0 in order to be non-informative. These settings cannot be changed. All other parameters for prior distributions can be modified by the user. 
+
+Defaults for the prior variance for the fixed effect coefficients are set to be large ($s=7$) and $U$ and $V$, the hyperparamters for the random intercept variance, are set to small values in order to be uninformative. For the dispersion parameter, we choose a prior mean of $A = -log(7)$ for all genes, which would inidicate little over-dispersion / Poisson behavior and chose a large prior variance of $B=7^2$.
+
+We believe that these are reasonable prior choices for a variety of problems; however, all of these parameters can be specified by the user to tailor priors to a particular problem or dataset.  In particular, we show how to use a trended prior for dispersion parameters that shares information across genes in the section "An Example MCMSeq Analysis Using Custom Priors: Sharing Information Across Genes."
+
+#### _Proposal Distribution and MCMC Options_
+
+| Option               | Description                                         | Default |
+| :---------------------- | :--------------------------------------------------- | :----------------|
+| proposal_method         | Method for updating the regression coefficients.  Either 'rw" (random walk) or 'wls' (weighted least squares). | 'wls' |
+| rw_sd_log_alpha     | Random walk standard deviation for proposing dispersion values  | 3|
+|rw_sd_betas | Standard deviation for the random walk proposal for regression coefficients.  Only used for propsal_method = 'rw'.|0.5|
+| n_it   | Number of MCMC iterations to run.  |1000| 
+starting_betas | Numeric matrix of starting values for the regression coefficients. | Starting values for the intercept are set to row means of counts matrix.  All others start at 0. |
+|prop_burn_in |Number between 0 and 1 indicating the proportion of MCMC chain to discard as burn-in.  | 0.1 |
+|num_accept |Number of forced accepts of fixed and random effects at the beginning of the MCMC. In practice forcing about 20 accepts prevents inverse errors at the start of chains and gives better mixing overall.  This value must be less than or equal to the number of burn-in iterations.|20|
+
+By default fixed and random effect regression coefficients are updated using a Metropolis Hastings step with a weighted least squares proposal, as described by Gammerman (YEAR).  We have extensively tested this proposal for use in negative binomial mixed models and negative binomial regression models. Typically acceptance rates for this type of proposal are quite high. In pratice, we consider features that have > 10\% accepts to have converged in terms of the fixed and random effect coefficients. However, if acceptance rates are low, we offer a random walk proposal,  which can tried for features that do not converge using the WLS proposal. A random walk proposal can be chosen by changing proposal_method = 'wls' to proposal_method = 'rw' in the mcmseq.fit function.  If proposal_method = 'rw', then a "step size" or standard deviation for the random walk proposal distribution must be selected (rw_sd_betas). This parameter may need to be tuned in order to achieve appropriate mixing and acceptance probabilities.
+
+Similarly, the dispersion parameters are also updated using a random walk proposal with a standard deviation of rw_sd_log_alpha.  This parameter may need to be tuned in order to achieve appropriate mixing and acceptance probabilities.
+
+For random walk proposals, acceptance rates around 23\% are considered optimal.  In practice, we filter out features that have acceptance probabilities less than 10\%. In addition, we use Geweke statistics to evaluate mixing and convergence.  Geweke statistics compare the mean values of each paramter during the first 20\% of iterations (after burn in) to the mean in the last 50\%.  If the chain is converged, these two means should be similar.  Small p-values for Geweke statistics indicate that the means are different and that model has not converged and that the number of iterations should be increased. If many features have low acceptance rates, you should also consider changing rw_sd_log_alpha (or rw_sd_betas for coefficients).  To increase acceptance rates, reduce the value of rw_sd_log_alpha.  To decrease acceptance rates increase rw_sd_log_alpha.  Before running mcmseq on your full dataset, you may want to do a test run with a small number of features (1,000) and adjust random walk standard deviations as needed. 
+
+#### _Convergence Options_
+
+| Option               | Description                                         | Default |
+| :---------------------- | :--------------------------------------------------- | :----------------|
+| prop.accepts.betas         | Minimum acceptance rate for regression coefficients to be considered converged. | 0.1 |
+| prop.accepts.alphas     | Minimum acceptance rate for dispersion parameters to be considered converged.  | 0.1|
+| geweke.p     | Minimum (FDR adjusted) Geweke p-value for a paramter to be considered converged.  | 0.05|
+
+The mcmseq.fit function returns information on genes that may have failed to converge.  By default, genes with acceptance rates for regression coefficients or dispersions less than 10\% or Geweke p-values less than 0.05 are flagged as convergence failures. These thresholds can be adjusted by the user using the prop.accepts.betas (minimum acceptance rate for regression coefficients to be considered converged), prop.accepts.alphas (minimum acceptance rate for dispersion paramters to be considered converged), and geweke.p (minimum Geweke p-value for a model paramter to be considered converged) arguments.  We do not suggest using values less than our defaults; more stringent convergence criteria may be used by increasing these values. 
+
+### mcmseq.summary
+#### _Required Arguments_
+ 
+| Argument       | Description | Default|
+| :-------------- | :---------------------------------------------------| :----------------|
+| mcmseqModel    | a mcmseq objet resulting from mcmseq.fit. |        
+summarizeWhat | character string indicating what to summarize:"coefficient" to summarize fixed effect coefficients or "contrast" to summarize contrasts | "coefficient"|
+which | character string or numeric indicator of which coefficient or contrast to summarize | 1|
+
+#### _Filtering Options_
+
+| Option               | Description                                         | Default |
+| :---------------------- | :--------------------------------------------------- | :----------------|
+| prop.accepts.betas         | range of acceptance rates for regression coefficients where model is considered converged.| c(0.1,1) |        
+| prop.accepts.alphas   | range of acceptance rates for dispersion parameters where model is considered converged. | c(0.1, 0.7) | 
+| filter_by         | optional character string which variable to use to filter: "posterior_median": filter by posterior mean (default: greater than filter_val); "posterior_median_abs": filter by absolute value of posterior mean (default: greater than filter_val); "BF": filter by bayes factor (default: greater than filter_val); "exact_pval": filter exact p-value (default:less than filter_val); "BH_adjusted_pval": filter by adjusted p-value (default: less than filtre_val) |NULL |  
+| filter_val     | numeric variable or vector indicating the threshold for filtering based on the variable(s) in filter_by  | NULL|
+| gt   | logical (TRUE or FALSE) or vector of logicals indicating if values greater than filter_val(s) should be excluded from the results table.  |See description for filter_val.| 
+
+#### _Ordering Options_
+
+| Option               | Description                                         | Default |
+| :---------------------- | :--------------------------------------------------- | :----------------|
+| order_by         | character string or vector of character strings which variable(s) to order the results table by: "posterior_median": order by posterior median (default decreasing order); "posterior_median_abs": order by absolute value of the median (default decreasing order); "BF": order by bayes factor (default decreasing order); "exact_pval": order by exact p-value (default increasing order); "BH_adjusted_pval": Order by adjusted p-value (default increasing order)| Defaults to ordering of the counts matrix |        
+| decreasing   | logical (TRUE or FALSE) indicating if the results table should appear in decreasing order | See order_by for defaults. | 
+| log2         | logical (TRUE or FALSE) indicating if log2 scale should be used (instead of natural log scale) | FALSE |
+
+#### _Convergence Options_
+
+| Option               | Description                                         | Default |
+| :---------------------- | :--------------------------------------------------- | :----------------|
+| prop.accepts.betas         | Minimum acceptance rate for regression coefficients to be considered converged. | 0.1 |
+| prop.accepts.alphas     | Minimum acceptance rate for dispersion parameters to be considered converged.  | 0.1|
+| geweke.p     | Minimum (FDR adjusted) Geweke p-value for a paramter to be considered converged.  | 0.05|
+
+By default, the mcmseq.summary function filters out genes that may have failed to converge. By default, genes with acceptance rates for regression coefficients or dispersions less than 10\% or Geweke p-values less than 0.05 are filtered from results. These thresholds can be adjusted by the user using the prop.accepts.betas (minimum acceptance rate for regression coefficients to be considered converged), prop.accepts.alphas (minimum acceptance rate for dispersion paramters to be considered converged), and geweke.p (minimum Geweke p-value for a model paramter to be considered converged) arguments.  We do not suggest using values less than our defaults; more stringent convergence criteria may be used by increasing these values. 
+
+## An Example MCMSeq Analysis Using Default Priors
+We will perform an analysis on a simulated dataset.  The data is included as part of the mcmseq package and includes simulated expression count data on 6 subjects (ids 1 to 6): 3 control subjects (group = 0) and 3 treatment subjects (group = 1).  All subjects are measured at 2 timepoints, baseline (time = 0) and follow-up (time = 1).  1,000 genes are included in the dataset, 200 of which were simulated to have changes in expression from baseline to follow up in the treatment group only. First load the data:
+```{r}
+# Load the library
+library(mcmseq)
+
+# Load the data
+data("simdata")
+
+names(simdata)
+
+# metadata has information about the the study design
+# each row is a sample and corresponds to a column
+# in the counts matrix
+metadata <- simdata$metadata
+metadata
+
+# The counts matrix has the same number of columns as
+# rows in metadata.  The columns of the counts matrix
+# are in the same order as the rows of the metadata.
+counts <- simdata$counts
+head(counts)
+
+```
+The goal of our analysis will be to compare changes over time between the control and treatment groups.  We will fit the following model to the data:
+
+\begin{eqnarray}
+ \label{eq:sim_data}
+Y_{gij} &\sim& \mathcal{NB}(\mu_{gij}, \alpha_g) \nonumber \\
+\log(\mu_{gij}) &=& \beta_{g0} + \beta_{g1} I_{T_i} + \beta_{g2} I_{F_{ij}} + \beta_{g3}I_{T_i} I_{F_{ij}} + b_{gi} + \rho_{ij} \nonumber \\
+b_{gi} &\sim& \mathcal{N}(0, \sigma_{gb}^2) \nonumber
+\end{eqnarray}
+ where $I_{T_i}$ is an indicator function that equals 1 if subject $i$ is in the treatment group, $I_{F_{ij}}$ is a similar indicator for if observation $j$ is the follow-up, $b_{gi}$ is the random intercept for gene $g$ and subject $i$ and $\rho_{ij}$ is an offset for subject $i$ at observation $j$ to account for differences in sequencing depth. 
+ 
+```{r}
+# Create the fixed effects model formula
+f <- ~ group*time
+
+```
+
+### Setting Up Contrasts
+In addition, we are interested in the following contrasts or linear combinations of regression parameters:
+
+- $\beta_{g1} + \beta_{g3} = 0$ tests for differences in expression between the treatment and the control group at follow-up
+
+- $\beta_{g2} + \beta_{g3} = 0$ tests for a change in expression over time in the treatment group
+
+The mcmseq fitting function allows users to specify custom contrasts or linear combinations of the fixed effects regression coefficients for testing through the contrast_mat option.  The contrast matrix must have the same number of columns as fixed effects and each row corresponds to a different contrast to test.  In addition, the user can specify contrast names either by naming the rows of the contrast matrix of by supplying a character vector of contrast names to the contrast_names option.  
+
+The fixed effects in the contrast matrix must be in the same order specified by the model formula.  If you are unsure of the ordering, mcmseq.fit uses the model.matrix function to create a design matrix for the fixed effects based on the fixed_effects formula supplied by the user.  To see the design matrix for the formula and create the contrast matrix:
+
+```{r}
+# Look at the fixed effects design matrix to develop the contrast_mat
+head(model.matrix(f, data = metadata))
+
+# Create the contrast matrix
+contrasts <- rbind(c(0,1,0,1), # group + group:time
+                   c(0,0,1,1)  # time + group:time 
+              )
+
+# Name the contrasts by specifying rownames
+rownames(contrasts) <- c("Treatment_v_Control_at_FollowUp", 
+                         "FollowUp_v_Baseline_in_Treatment")
+
+# View the contrast matrix
+contrasts
+```
+### Fitting the Model
+To fit the model, we use the mcmseq.fit function.  Default values are specified for all priors. The counts argument takes a data frame or matrix of counts, the columns of which must be in the same order as the rows of sample_data data frame, which contains metadata on each sample.  All fixed effects specified in the fixed_effects formula, as well as any random effects specified in the random_intercept option, must be included in the sample_data data frame. To include a random intercept for each subject in the model, specify the name of the sample_data column that contains the subject identifier.  By default, the mcmseq.fit will use rownames of the counts matrix to identify genes.  If you would like to use a different set of gene names, you can supply a character vector of names in the same order as the rows of the counts matrix to the gene_names option.  Since we named the rows of our contrast matrix, we leave the contrast_names option at its default NULL value.  To quickly illustrate how the package works, we set the number of iterations to 1,000, however, in practice we suggest using a much higher number of iterations for mixed model fits (>30,000).  prop_burn_in specifies the proportion of the chain that should be used for burn in, to allow for MCMC convergence.  The default is 10\%. 
+```{r}
+# Fit the Model
+fit.default <- mcmseq.fit(counts=counts, 
+                       fixed_effects = f,
+                       sample_data = metadata,
+                       random_intercept = 'ids', 
+                       gene_names = paste0('gene_', seq(1,1000,1)),
+                       contrast_mat = contrasts,
+                       contrast_names = NULL,
+                       n_it = 1000,
+                       prop_burn_in = 0.1
+)
+
+# Look at the mcmseq fit object
+class(fit.default)
+
+names(fit.default)
+```
+
+The resulting mcmseq object is a list.  Elements 8-24 of the list provide information about the user supplied and/or default settings used to fit the model.  "betas_est" is a 3 dimensional array (number of fixed effects x 4 x number of genes), which contains the posterior median, standard deviation, Bayes factor, and raw pseudo p-value for each regression coefficient for each gene.  Similarly, "contrast_est" is a 3 dimensional array (number contrasts x 4 x number of genes), containing the same information for each contrast. "alphas_est" contains the dispersion parameters for each gene, and  "sig2_est" contains the random intercept variance for each gene.   
+```{r}
+# See regression coefficient estimates for the first gene
+fit.default$betas_est[,,1]
+
+# See the contrast estimates for the first gene
+fit.default$contrast_est[,,1]
+
+# See the dispersion and random intercept variance estimates for the
+# first 10 genes
+fit.default$alphas_est[1:10]
+fit.default$sig2_est[1:10]
+
+```
+
+The mcmseq object also contains information about genes that may have failed to converge. "accepts_betas" contains the number of iterations where a proposal for the regression coefficients was accepted, which provides information about the mixing of the chain. Similarly, "accepts_alphas" provides the number of accepts for updates of the dispersion parameter. "geweke_all" is a matrix of raw (unadjusted) Geweke p-values (number of rows = number of genes, columns = fixed effects, the random effect variance (if applicable), and dispersion). The last element of the mcmseq object, "convergence failures" contains information on genes that may have failed to converge based on the information from "accepts_alphas", "accepts_betas", and "geweke_all".  The raw p-values in "geweke_all" are FDR adjusted using a Benjamini-Hochberg correction to determine genes that have significant Geweke p-values. 
+```{r}
+# See convergence failures, the Geweke p-values and acceptance rates
+fit.default$convergence_failures
+```
+ It is likely that a handful of genes in our example have failed to converge due to low Geweke p-values since we have run so few MCMC iterations.  
+ 
+## What if a large number of genes fail to converge?
+If a large number of genes fail to converge, you should inspect the "convergence_failures" for low acceptance rates and low Geweke p-values.  If features fail due to low Geweke p-values, you might consider increasing the number of MCMC iterations, n_it.  If the acceptance rate for the dispersion parameter is low or very high, try adjusting rw_sd_log_alpha.  Reducing rw_sd_log_alpha will increase acceptance rates, while increasing rw_sd_log_alpha will reduce acceptance rates.  If features fail due to the acceptance rates for the regression coefficients, you might try using a random walk proposal for the coefficients instead of the WLS method for the subset of genes that failed to converge.
+
+
+### Summarizing Results
+Results can be more easily summarized with the mcmseq.summary function, which calculates Benjamini-Hochberg adjusted p-values and allows for filtering and ordering of results into tables. By default, results will be presented in the same order in which they were supplied in the counts matrix.  However, results can be ordered by "posterior_median" (the posterior median of the regression coefficient or contrast of interest), "posterior_median_abs" (the absolute value of the posterior median), "BF" the Bayes factor, "exact_pval" (raw p-value), or "BH_adjusted_pval" (the Benjamini-Hochberg adjusted p-value).  Results can be retrieved in either descending or ascending order by setting the decreasing option to TRUE or FALSE, respectively.  
+
+Results can also be filtered by one or more of these same variables, using the filter_by option, which takes a character vector of variables to filter by.  The filter_val option allows the user to specify filtering values for each variable listed in filtery_by.  The gt option is a vector of logicals indicating if values greater than (vs. less than) filter_val(s) should be excluded from the results table.  
+
+By default results are presented on the natural log scale.  If you would prefer to see results on the log2 scale, use the log2 = TRUE option. 
+
+Importantly, the mcmseq.summary function also filters out genes that may not have converged. By default, genes with acceptance rates for regression coefficients or dispersions less than 10\% or FDR adjusted Geweke p-values less than 0.05 are considered convergence failures and are filtered from the results.  These thresholds can be adjusted by the user using the prop.accepts.betas (minimum acceptance rate for regression coefficients to be considered converged), prop.accepts.alphas (minimum acceptance rate for dispersion paramters to be considered converged), and geweke.p (minimum Geweke p-value for a model paramter to be considered converged) arguments.  We do not suggest using values less than our defaults; more stringent convergence criteria may be used by increasing these values.  
+
+```{r}
+# Summarize results for the first contrast, on the log2 scale
+c1_table <- mcmseq.summary(mcmseqModel = fit.default, 
+                 summarizeWhat="contrast",  
+                 which = "Treatment_v_Control_at_FollowUp",
+                  log2=TRUE 
+            )
+
+dim(c1_table)
+
+head(c1_table)
+
+# Filter out genes with effect sizes less than 1 and BH adjusted p-values > 0.05
+# Order results by BH adjusted p-value
+c1_table_filtered <- mcmseq.summary(mcmseqModel = fit.default, 
+                 summarizeWhat="contrast",  
+                 which = "Treatment_v_Control_at_FollowUp",  
+                 prop.accepts.betas = c(0.1,1), 
+                 prop.accepts.alphas  = c(0.1,0.7),
+                 order_by = "BH_adjusted_pval", 
+                 decreasing = FALSE,
+                 filter_by = c("BH_adjusted_pval", "posterior_median_abs"),
+                 filter_val = c(0.05, 1),
+                 gt = c(FALSE, TRUE),
+                  log2=TRUE 
+            )
+
+dim(c1_table_filtered)
+
+head(c1_table_filtered)
+
+# Do the same for the group coefficient which represnts the difference 
+# between treatment and control at baseline
+group_table_filtered <- mcmseq.summary(mcmseqModel = fit.default, 
+                 summarizeWhat="coefficient",  
+                 which = "group",  
+                 prop.accepts.betas = c(0.1,1), 
+                 prop.accepts.alphas  = c(0.1,0.7),
+                 order_by = "BH_adjusted_pval", 
+                 decreasing = FALSE,
+                 filter_by = c("BH_adjusted_pval", "posterior_median_abs"),
+                 filter_val = c(0.05, 1),
+                 gt = c(FALSE, TRUE),
+                  log2=TRUE 
+            )
+
+dim(c1_table_filtered)
+
+head(c1_table_filtered)
+
+```
+
+
+## An Example MCMSeq Analysis Using Custom Priors: Sharing Information Across Genes
+It is possible to share information across genes via the prior distribution for the dispersion parameters. For convenience the trended.dispersion function can be used to develop a prior that takes into account potential mean dispersion relationships.  The function first normalizes counts to adjust for differences in sequencing depth between samples by scaling all samples to the median library size. The mean normalized counts are then calculated for each gene and the method of moments is used to obtain a naive estimate of the dispersion parameter.  A loess curve is then fit to describe the relationship between the log(mean counts) and the log(dispersion).  Predictions from this curve can be used as prior means for the log normal prior on the dispersion paramter for each gene.  The residual standard error of the model, potentially multiplied by a variance inflation factor, can be used for the prior standard deviation  
+
+First we run the trended.dispersion function.
+
+```{r}
+# Develop the trended dispersion prior
+disp.prior <- trended.dispersion(counts, span=1)
+
+```
+
+We inspect the plot to determine if the smoothing paramter (span) for the loess regression should be adjusted.  Higher values result in more smoothing.  Once we are satisfied with the regression model, we fit the mcmcseq model as usual, using the prior mean and SD from the trended dispersion function.
+
+```{r}
+# Fit the Model
+fit.custom <- mcmseq.fit(counts=counts, 
+                       fixed_effects = f,
+                       sample_data = metadata,
+                       random_intercept = 'ids', 
+                       gene_names = paste0('gene_', seq(1,1000,1)),
+                       contrast_mat = contrasts,
+                       contrast_names = NULL,
+                       prior_mean_log_alpha = disp.prior$prior_mean_log_alpha,
+                       prior_sd_log_alpha = 2 * disp.prior$prior_sd_log_alpha,
+                       n_it = 1000,
+                       prop_burn_in = 0.1
+)
+
+```
+
+We can summarize the results as usual.
+
+```{r}
+# Summarize results for the first contrast, on the log2 scale
+c1_table_custom <- mcmseq.summary(mcmseqModel = fit.custom, 
+                 summarizeWhat="contrast",  
+                 which = "Treatment_v_Control_at_FollowUp",
+                  log2=TRUE 
+            )
+
+dim(c1_table_custom)
+
+head(c1_table_custom)
+
+# Filter out genes with effect sizes less than 1 and BH adjusted p-values > 0.05
+# Order results by BH adjusted p-value
+c1_table_custom_filtered <- mcmseq.summary(mcmseqModel = fit.custom, 
+                 summarizeWhat="contrast",  
+                 which = "Treatment_v_Control_at_FollowUp",  
+                 prop.accepts.betas = c(0.1), 
+                 prop.accepts.alphas  = c(0.1),
+                 order_by = "BH_adjusted_pval", 
+                 decreasing = FALSE,
+                 filter_by = c("BH_adjusted_pval", "posterior_median_abs"),
+                 filter_val = c(0.05, 1),
+                 gt = c(FALSE, TRUE),
+                  log2=TRUE 
+            )
+
+dim(c1_table_custom_filtered)
+
+head(c1_table_custom_filtered)
+
+
+```
+
+## An Example MCMSeq Analysis Without Random Effects
+
+The mcmseq.fit function can also fit model that do not include clusting or random effects.  In this example we will fit a model to compare expression between the treatment and control group at follow-up.  First we must filter out dataset to the appropriate samples:
+
+```{r}
+# Load the data
+data("simdata")
+
+names(simdata)
+
+# metadata has information about the the study design
+# each row is a sample and corresponds to a column
+# in the counts matrix
+metadata <- simdata$metadata
+
+# Subset the metadata to the follow-up observations
+metadata.glm <- metadata[metadata$time==1,]
+
+# The counts matrix has the same number of columns as
+# rows in metadata.  The columns of the counts matrix
+# are in the same order as the rows of the metadata.
+counts <- simdata$counts
+head(counts)
+
+# Subset the metadata to the follow-up observations
+counts.glm <- counts[,metadata$time==1]
+
+```
+
+We now fit the model using default priors.  To fit a model without random effects, we simply leave out random_intercept argument or set random_intercept to NULL.  
+
+```{r}
+# Fit the Model
+fit.default.glm <- mcmseq.fit(counts=counts.glm, 
+                       fixed_effects = ~ group,
+                       sample_data = metadata.glm,
+                       random_intercept = NULL, 
+                       gene_names = paste0('gene_', seq(1,1000,1)),
+                       contrast_mat = NULL,
+                       contrast_names = NULL,
+                       n_it = 1000,
+                       prop_burn_in = 0.1
+)
+```
+
+We can summarize the results as usual:
+
+```{r}
+group_table_filtered <- mcmseq.summary(mcmseqModel = fit.default, 
+                 summarizeWhat="coefficient",  
+                 which = "group",  
+                 prop.accepts.betas = c(0.1,1), 
+                 prop.accepts.alphas  = c(0.1,0.7),
+                 order_by = "BH_adjusted_pval", 
+                 decreasing = FALSE,
+                 filter_by = c("BH_adjusted_pval", "posterior_median_abs"),
+                 filter_val = c(0.05, 1),
+                 gt = c(FALSE, TRUE),
+                  log2=TRUE 
+            )
+
+dim(c1_table_filtered)
+
+head(c1_table_filtered)
+```

@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta name="author" content="Camille M. Moore" />
+
+<meta name="date" content="2019-06-12" />
+
+<title>An Introduction to MCMSeq</title>
+
+
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code > span.dt { color: #902000; } /* DataType */
+code > span.dv { color: #40a070; } /* DecVal */
+code > span.bn { color: #40a070; } /* BaseN */
+code > span.fl { color: #40a070; } /* Float */
+code > span.ch { color: #4070a0; } /* Char */
+code > span.st { color: #4070a0; } /* String */
+code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code > span.ot { color: #007020; } /* Other */
+code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code > span.fu { color: #06287e; } /* Function */
+code > span.er { color: #ff0000; font-weight: bold; } /* Error */
+code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #880000; } /* Constant */
+code > span.sc { color: #4070a0; } /* SpecialChar */
+code > span.vs { color: #4070a0; } /* VerbatimString */
+code > span.ss { color: #bb6688; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #19177c; } /* Variable */
+code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #666666; } /* Operator */
+code > span.bu { } /* BuiltIn */
+code > span.ex { } /* Extension */
+code > span.pp { color: #bc7a00; } /* Preprocessor */
+code > span.at { color: #7d9029; } /* Attribute */
+code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+</style>
+
+
+
+<link href="data:text/css;charset=utf-8,body%20%7B%0Abackground%2Dcolor%3A%20%23fff%3B%0Amargin%3A%201em%20auto%3B%0Amax%2Dwidth%3A%20700px%3B%0Aoverflow%3A%20visible%3B%0Apadding%2Dleft%3A%202em%3B%0Apadding%2Dright%3A%202em%3B%0Afont%2Dfamily%3A%20%22Open%20Sans%22%2C%20%22Helvetica%20Neue%22%2C%20Helvetica%2C%20Arial%2C%20sans%2Dserif%3B%0Afont%2Dsize%3A%2014px%3B%0Aline%2Dheight%3A%201%2E35%3B%0A%7D%0A%23header%20%7B%0Atext%2Dalign%3A%20center%3B%0A%7D%0A%23TOC%20%7B%0Aclear%3A%20both%3B%0Amargin%3A%200%200%2010px%2010px%3B%0Apadding%3A%204px%3B%0Awidth%3A%20400px%3B%0Aborder%3A%201px%20solid%20%23CCCCCC%3B%0Aborder%2Dradius%3A%205px%3B%0Abackground%2Dcolor%3A%20%23f6f6f6%3B%0Afont%2Dsize%3A%2013px%3B%0Aline%2Dheight%3A%201%2E3%3B%0A%7D%0A%23TOC%20%2Etoctitle%20%7B%0Afont%2Dweight%3A%20bold%3B%0Afont%2Dsize%3A%2015px%3B%0Amargin%2Dleft%3A%205px%3B%0A%7D%0A%23TOC%20ul%20%7B%0Apadding%2Dleft%3A%2040px%3B%0Amargin%2Dleft%3A%20%2D1%2E5em%3B%0Amargin%2Dtop%3A%205px%3B%0Amargin%2Dbottom%3A%205px%3B%0A%7D%0A%23TOC%20ul%20ul%20%7B%0Amargin%2Dleft%3A%20%2D2em%3B%0A%7D%0A%23TOC%20li%20%7B%0Aline%2Dheight%3A%2016px%3B%0A%7D%0Atable%20%7B%0Amargin%3A%201em%20auto%3B%0Aborder%2Dwidth%3A%201px%3B%0Aborder%2Dcolor%3A%20%23DDDDDD%3B%0Aborder%2Dstyle%3A%20outset%3B%0Aborder%2Dcollapse%3A%20collapse%3B%0A%7D%0Atable%20th%20%7B%0Aborder%2Dwidth%3A%202px%3B%0Apadding%3A%205px%3B%0Aborder%2Dstyle%3A%20inset%3B%0A%7D%0Atable%20td%20%7B%0Aborder%2Dwidth%3A%201px%3B%0Aborder%2Dstyle%3A%20inset%3B%0Aline%2Dheight%3A%2018px%3B%0Apadding%3A%205px%205px%3B%0A%7D%0Atable%2C%20table%20th%2C%20table%20td%20%7B%0Aborder%2Dleft%2Dstyle%3A%20none%3B%0Aborder%2Dright%2Dstyle%3A%20none%3B%0A%7D%0Atable%20thead%2C%20table%20tr%2Eeven%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0A%7D%0Ap%20%7B%0Amargin%3A%200%2E5em%200%3B%0A%7D%0Ablockquote%20%7B%0Abackground%2Dcolor%3A%20%23f6f6f6%3B%0Apadding%3A%200%2E25em%200%2E75em%3B%0A%7D%0Ahr%20%7B%0Aborder%2Dstyle%3A%20solid%3B%0Aborder%3A%20none%3B%0Aborder%2Dtop%3A%201px%20solid%20%23777%3B%0Amargin%3A%2028px%200%3B%0A%7D%0Adl%20%7B%0Amargin%2Dleft%3A%200%3B%0A%7D%0Adl%20dd%20%7B%0Amargin%2Dbottom%3A%2013px%3B%0Amargin%2Dleft%3A%2013px%3B%0A%7D%0Adl%20dt%20%7B%0Afont%2Dweight%3A%20bold%3B%0A%7D%0Aul%20%7B%0Amargin%2Dtop%3A%200%3B%0A%7D%0Aul%20li%20%7B%0Alist%2Dstyle%3A%20circle%20outside%3B%0A%7D%0Aul%20ul%20%7B%0Amargin%2Dbottom%3A%200%3B%0A%7D%0Apre%2C%20code%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0Aborder%2Dradius%3A%203px%3B%0Acolor%3A%20%23333%3B%0Awhite%2Dspace%3A%20pre%2Dwrap%3B%20%0A%7D%0Apre%20%7B%0Aborder%2Dradius%3A%203px%3B%0Amargin%3A%205px%200px%2010px%200px%3B%0Apadding%3A%2010px%3B%0A%7D%0Apre%3Anot%28%5Bclass%5D%29%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0A%7D%0Acode%20%7B%0Afont%2Dfamily%3A%20Consolas%2C%20Monaco%2C%20%27Courier%20New%27%2C%20monospace%3B%0Afont%2Dsize%3A%2085%25%3B%0A%7D%0Ap%20%3E%20code%2C%20li%20%3E%20code%20%7B%0Apadding%3A%202px%200px%3B%0A%7D%0Adiv%2Efigure%20%7B%0Atext%2Dalign%3A%20center%3B%0A%7D%0Aimg%20%7B%0Abackground%2Dcolor%3A%20%23FFFFFF%3B%0Apadding%3A%202px%3B%0Aborder%3A%201px%20solid%20%23DDDDDD%3B%0Aborder%2Dradius%3A%203px%3B%0Aborder%3A%201px%20solid%20%23CCCCCC%3B%0Amargin%3A%200%205px%3B%0A%7D%0Ah1%20%7B%0Amargin%2Dtop%3A%200%3B%0Afont%2Dsize%3A%2035px%3B%0Aline%2Dheight%3A%2040px%3B%0A%7D%0Ah2%20%7B%0Aborder%2Dbottom%3A%204px%20solid%20%23f7f7f7%3B%0Apadding%2Dtop%3A%2010px%3B%0Apadding%2Dbottom%3A%202px%3B%0Afont%2Dsize%3A%20145%25%3B%0A%7D%0Ah3%20%7B%0Aborder%2Dbottom%3A%202px%20solid%20%23f7f7f7%3B%0Apadding%2Dtop%3A%2010px%3B%0Afont%2Dsize%3A%20120%25%3B%0A%7D%0Ah4%20%7B%0Aborder%2Dbottom%3A%201px%20solid%20%23f7f7f7%3B%0Amargin%2Dleft%3A%208px%3B%0Afont%2Dsize%3A%20105%25%3B%0A%7D%0Ah5%2C%20h6%20%7B%0Aborder%2Dbottom%3A%201px%20solid%20%23ccc%3B%0Afont%2Dsize%3A%20105%25%3B%0A%7D%0Aa%20%7B%0Acolor%3A%20%230033dd%3B%0Atext%2Ddecoration%3A%20none%3B%0A%7D%0Aa%3Ahover%20%7B%0Acolor%3A%20%236666ff%3B%20%7D%0Aa%3Avisited%20%7B%0Acolor%3A%20%23800080%3B%20%7D%0Aa%3Avisited%3Ahover%20%7B%0Acolor%3A%20%23BB00BB%3B%20%7D%0Aa%5Bhref%5E%3D%22http%3A%22%5D%20%7B%0Atext%2Ddecoration%3A%20underline%3B%20%7D%0Aa%5Bhref%5E%3D%22https%3A%22%5D%20%7B%0Atext%2Ddecoration%3A%20underline%3B%20%7D%0A%0Acode%20%3E%20span%2Ekw%20%7B%20color%3A%20%23555%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%0Acode%20%3E%20span%2Edt%20%7B%20color%3A%20%23902000%3B%20%7D%20%0Acode%20%3E%20span%2Edv%20%7B%20color%3A%20%2340a070%3B%20%7D%20%0Acode%20%3E%20span%2Ebn%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Efl%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Ech%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Est%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Eco%20%7B%20color%3A%20%23888888%3B%20font%2Dstyle%3A%20italic%3B%20%7D%20%0Acode%20%3E%20span%2Eot%20%7B%20color%3A%20%23007020%3B%20%7D%20%0Acode%20%3E%20span%2Eal%20%7B%20color%3A%20%23ff0000%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%0Acode%20%3E%20span%2Efu%20%7B%20color%3A%20%23900%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%20code%20%3E%20span%2Eer%20%7B%20color%3A%20%23a61717%3B%20background%2Dcolor%3A%20%23e3d2d2%3B%20%7D%20%0A" rel="stylesheet" type="text/css" />
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">An Introduction to MCMSeq</h1>
+<h4 class="author"><em>Camille M. Moore</em></h4>
+<h4 class="date"><em>2019-06-12</em></h4>
+
+
+
+<p>As the cost of sequencing decreases, the complexity and size of RNA-Seq experiments are rapidly growing. In particular, paired, longitudinal and other correlated study designs are becoming commonplace. However, the tools available to analyze these more complex study design are limited.</p>
+<p>It is well known that failing to account for correlation between repeated outcome measurements can result in misleading inferences. For example, when estimating changes in gene expression over time, if there is strong within subject correlation, estimated standard errors will be too large if correlation is ignored, reducing power to detect differential expression over time. Attempting to analyze correlated RNA-Seq data with DESeq2 or edgeR by including all levels of the clustering variable as fixed effects in the regression model can also be problematic. In this case, the number of parameters necessary to account for correlation is equal to the number of subjects or clusters. This may result in a model that is too complex for the number of observations in the study, leading to overfitting. When overfitting is present, some of the findings of the analysis come from fitting noise, resulting in spurious associations and results that cannot be reproduced in future studies. Cui et al (2016) also noted that this strategy led to inflated false positive rates. In addition, if a regression parameter for each subject is included in a model, other effects of interest may not be estimable. For example, in a study comparing gene expression between two groups over time, differences between groups at individual time points can not be estimated.</p>
+<p>MCMSeq uses a Bayesian hierarchical negative binomial model to account for correlation in clustered and longitudinal RNA-Seq experiments. This model allows for the inclusion of random effects that can be used to account for correlation. If desired, information can be borrowed across genes when developing the prior for the dispersion parameter, a practice we found improved error rates. The model is fit using Markov-chain Monte Carlo (MCMC) methods, which can be compuationally intensive. The MCMSeq algorithm has been optimized in C++ and can be run in parallel to speed computation time.</p>
+<div id="model-specification" class="section level2">
+<h2>Model Specification</h2>
+Similar to other commonly used RNA-Seq analysis tools, we model the observed RNA-Seq count data with a negative binomial distribution with a log link function. To account for correlation, we allow a random intercept to be included in the model. Let <span class="math inline">\(Y_{gij}\)</span> be the expression of gene <span class="math inline">\(g\)</span> from subject <span class="math inline">\(i\)</span> at time point or observation <span class="math inline">\(j\)</span>, then
+<span class="math display">\[\begin{eqnarray}
+\label{eqn:glmm}
+Y_{gij} &amp;\sim&amp; \mathcal{NB}(\mu_{gij}, \alpha_g) \\
+\log(\mu_{gij}) &amp;=&amp; X_{ij}\boldsymbol{\beta_g} + b_{gi} + \rho_{ij}\\
+{b_{gi}} &amp;\sim&amp; \mathcal{N}(0, \sigma_g^2)
+\end{eqnarray}\]</span>
+<p>where <span class="math inline">\(\mu_{gij}\)</span> is the mean expression of gene <span class="math inline">\(g\)</span> in subject <span class="math inline">\(i\)</span> at observation <span class="math inline">\(j\)</span> and <span class="math inline">\(\alpha_g\)</span> is the dispersion parameter for gene <span class="math inline">\(g\)</span>, which is related to the variance of <span class="math inline">\(Y_{gij}\)</span> by Var(<span class="math inline">\(Y_{gij}\)</span>) = <span class="math inline">\(\mu_{gij} + \alpha_g \mu_{gij}^2\)</span>. <span class="math inline">\(\boldsymbol{\beta_g}\)</span> is a <span class="math inline">\(p\)</span> by 1 vector of fixed effect regression coefficients for gene <span class="math inline">\(g\)</span>, <span class="math inline">\(X_{ij}\)</span> is a row vector of fixed effects covariates for subject <span class="math inline">\(i\)</span> at observation <span class="math inline">\(j\)</span>, <span class="math inline">\(b_{gi}\)</span> is a random intercept for gene <span class="math inline">\(g\)</span> and subject <span class="math inline">\(i\)</span>, and <span class="math inline">\(\rho_{ij}\)</span> is an offset for subject <span class="math inline">\(i\)</span> at observation <span class="math inline">\(j\)</span>, which can be used to account for differences in sequencing depth between samples. We assume that for each gene, the subject-specific random intercept is normally distributed with mean 0 and variance <span class="math inline">\(\sigma_g^2\)</span>.</p>
+The Bayesian hierarchical model is completed by specifying priors (and hyper-priors) for <span class="math inline">\(\boldsymbol{\beta_g}\)</span>, <span class="math inline">\(\sigma_g^2\)</span>, and <span class="math inline">\(\alpha_g\)</span>:
+<span class="math display">\[\begin{eqnarray*}
+\boldsymbol{\beta_g} &amp;\sim&amp; \mathcal{MVN}(M_g, I_p s^2) \\
+%b_{gi} &amp;\sim&amp; \mathcal{N}(0, \Sigma_{g}) \\
+\sigma_g^2 &amp;\sim&amp; \mathcal{IG}(U, V) \\
+\log(\alpha_g) &amp;\sim&amp; \mathcal{N}(A_g, B) 
+\end{eqnarray*}\]</span>
+<p>where <span class="math inline">\(M_g\)</span> is a vector of length <span class="math inline">\(p\)</span> containing the prior means for the fixed effect regression coefficients for gene <span class="math inline">\(g\)</span>, <span class="math inline">\(I\)</span> is a <span class="math inline">\(p\)</span> x <span class="math inline">\(p\)</span> Identity matrix, <span class="math inline">\(s^2\)</span> is the prior variance for the fixed effect coefficients, <span class="math inline">\(\mathcal{MVN}\)</span> is the multivariate normal distribution, and <span class="math inline">\(\mathcal{IG}\)</span> is the inverse Gamma distribution with parameters <span class="math inline">\(U\)</span> and <span class="math inline">\(V\)</span>. We use a log normal prior for the dispersion paramters, <span class="math inline">\(alpha_g\)</span>, with prior mean <span class="math inline">\(A\)</span> and prior variance <span class="math inline">\(B\)</span>.</p>
+</div>
+<div id="overview-of-functions-in-the-mcmseq-package" class="section level2">
+<h2>Overview of Functions in the mcmseq Package</h2>
+<p>The two main functions in the mcmseq package are mcmseq.fit, which is used to fit mcmseq models, and mcmseq.summary, which is used to calculate Benjamini-Hochberg adjusted p-values and to order and filter results into tables. Each function has several required arguments and options which are described below.</p>
+<div id="mcmseq.fit" class="section level3">
+<h3>mcmseq.fit</h3>
+<div id="required-arguments" class="section level4">
+<h4><em>Required Arguments</em></h4>
+<table style="width:96%;">
+<colgroup>
+<col width="22%"></col>
+<col width="73%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">Argument</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">counts</td>
+<td align="left">Matrix of RNA-Seq counts. Rows are samples and columns are genes.</td>
+</tr>
+<tr class="even">
+<td align="left">fixed_effects</td>
+<td align="left">One sided formula specifying the fixed effects in the model</td>
+</tr>
+<tr class="odd">
+<td align="left">sample_data</td>
+<td align="left">Data frame containing information on the samples. Rows are samples and should be listed in the same order as columns of the counts matrix. Variables listed in the fixed_effects formula and random_intercept option should be included as columns in the sample_data.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="accounting-for-sequencing-depth-and-other-model-specification-options" class="section level4">
+<h4><em>Accounting for Sequencing Depth and Other Model Specification Options</em></h4>
+<table>
+<colgroup>
+<col width="25%"></col>
+<col width="55%"></col>
+<col width="18%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">Option</th>
+<th align="left">Description</th>
+<th align="left">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">random_intercept</td>
+<td align="left">An optional character string indicating the name of the clustering variable in sample_data to use as a random intercept.</td>
+<td align="left">NULL</td>
+</tr>
+<tr class="even">
+<td align="left">contrast_mat</td>
+<td align="left">An optional C x P numeric matrix of linear contrasts to test, where C is the number of contrasts and P is the number of fixed effects parameters in the model. Each row is a contrast.</td>
+<td align="left">NULL</td>
+</tr>
+<tr class="odd">
+<td align="left">contrast_names</td>
+<td align="left">An optional character vector of contrast names (length C).</td>
+<td align="left">rownames of the contrast matrix</td>
+</tr>
+<tr class="even">
+<td align="left">log_offset</td>
+<td align="left">A vector of offsets (on the linear predictor/natural log scale) to account for differences in sequencing depth between samples.</td>
+<td align="left">ln(75th percentile of counts for sample i) / median(ln(75th percentile of counts) across all samples)</td>
+</tr>
+</tbody>
+</table>
+<p>As a default, an offset is included to account for sequencing depth. We calculate the offset for subject <span class="math inline">\(i\)</span> at observation <span class="math inline">\(j\)</span> as <span class="math inline">\(\rho_{ij} = \frac{Q^{75}_{ij}}{\text{median}_{rs} (Q^{75}_{rs})}\)</span>, where <span class="math inline">\(Q^{75}_{ij}\)</span> is the 75<span class="math inline">\(^{th}\)</span> percentile of counts across genes for subject <span class="math inline">\(i\)</span> at observation <span class="math inline">\(j\)</span>. Other choices might include the total library size for an observation, the median of ratios method from DESeq2 or the trimmed mean of M values from EdgeR.</p>
+</div>
+<div id="choice-of-priors-and-prior-distribution-options" class="section level4">
+<h4><em>Choice of Priors and Prior Distribution Options</em></h4>
+<table>
+<colgroup>
+<col width="25%"></col>
+<col width="55%"></col>
+<col width="18%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">Option</th>
+<th align="left">Description</th>
+<th align="left">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">prior_sd_betas</td>
+<td align="left">Prior standard deviation for the fixed and random effect regression coefficients.</td>
+<td align="left">7</td>
+</tr>
+<tr class="even">
+<td align="left">prior_u_re_var</td>
+<td align="left">U paramater for the inverse gamma prior for the random effect variance</td>
+<td align="left">0.01</td>
+</tr>
+<tr class="odd">
+<td align="left">prior_v_re_var</td>
+<td align="left">V paramater for the inverse gamma prior for the random effect variance</td>
+<td align="left">0.01</td>
+</tr>
+<tr class="even">
+<td align="left">prior_sd_log_alpha</td>
+<td align="left">Standard deviation for the log normal prior for dispersion paramters.</td>
+<td align="left">7</td>
+</tr>
+<tr class="odd">
+<td align="left">prior_mean_log_alpha</td>
+<td align="left">Mean of the log normal prior for dispersion paramters. Note a unqiue value can be specified for each gene.</td>
+<td align="left">-log(7) for all genes</td>
+</tr>
+<tr class="even">
+<td align="left">gene_names</td>
+<td align="left">a vector of gene names (the length of the number of rows in the counts matrix)</td>
+<td align="left">row names of the counts matrix</td>
+</tr>
+</tbody>
+</table>
+<p>The the prior mean for the intercept (first element of <span class="math inline">\(M_g\)</span>) is set to be the log of the mean number of counts across samples for that gene; prior means for all other coefficients are 0 in order to be non-informative. These settings cannot be changed. All other parameters for prior distributions can be modified by the user.</p>
+<p>Defaults for the prior variance for the fixed effect coefficients are set to be large (<span class="math inline">\(s=7\)</span>) and <span class="math inline">\(U\)</span> and <span class="math inline">\(V\)</span>, the hyperparamters for the random intercept variance, are set to small values in order to be uninformative. For the dispersion parameter, we choose a prior mean of <span class="math inline">\(A = -log(7)\)</span> for all genes, which would inidicate little over-dispersion / Poisson behavior and chose a large prior variance of <span class="math inline">\(B=7^2\)</span>.</p>
+<p>We believe that these are reasonable prior choices for a variety of problems; however, all of these parameters can be specified by the user to tailor priors to a particular problem or dataset. In particular, we show how to use a trended prior for dispersion parameters that shares information across genes in the section “An Example MCMSeq Analysis Using Custom Priors: Sharing Information Across Genes.”</p>
+</div>
+<div id="proposal-distribution-and-mcmc-options" class="section level4">
+<h4><em>Proposal Distribution and MCMC Options</em></h4>
+<table>
+<colgroup>
+<col width="25%"></col>
+<col width="55%"></col>
+<col width="18%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">Option</th>
+<th align="left">Description</th>
+<th align="left">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">proposal_method</td>
+<td align="left">Method for updating the regression coefficients. Either ‘rw&quot; (random walk) or ’wls’ (weighted least squares).</td>
+<td align="left">‘wls’</td>
+</tr>
+<tr class="even">
+<td align="left">rw_sd_log_alpha</td>
+<td align="left">Random walk standard deviation for proposing dispersion values</td>
+<td align="left">3</td>
+</tr>
+<tr class="odd">
+<td align="left">rw_sd_betas</td>
+<td align="left">Standard deviation for the random walk proposal for regression coefficients. Only used for propsal_method = ‘rw’.</td>
+<td align="left">0.5</td>
+</tr>
+<tr class="even">
+<td align="left">n_it</td>
+<td align="left">Number of MCMC iterations to run.</td>
+<td align="left">1000</td>
+</tr>
+<tr class="odd">
+<td align="left">starting_betas</td>
+<td align="left">Numeric matrix of starting values for the regression coefficients.</td>
+<td align="left">Starting values for the intercept are set to row means of counts matrix. All others start at 0.</td>
+</tr>
+<tr class="even">
+<td align="left">prop_burn_in</td>
+<td align="left">Number between 0 and 1 indicating the proportion of MCMC chain to discard as burn-in.</td>
+<td align="left">0.1</td>
+</tr>
+<tr class="odd">
+<td align="left">num_accept</td>
+<td align="left">Number of forced accepts of fixed and random effects at the beginning of the MCMC. In practice forcing about 20 accepts prevents inverse errors at the start of chains and gives better mixing overall. This value must be less than or equal to the number of burn-in iterations.</td>
+<td align="left">20</td>
+</tr>
+</tbody>
+</table>
+<p>By default fixed and random effect regression coefficients are updated using a Metropolis Hastings step with a weighted least squares proposal, as described by Gammerman (YEAR). We have extensively tested this proposal for use in negative binomial mixed models and negative binomial regression models. Typically acceptance rates for this type of proposal are quite high. In pratice, we consider features that have &gt; 10% accepts to have converged in terms of the fixed and random effect coefficients. However, if acceptance rates are low, we offer a random walk proposal, which can tried for features that do not converge using the WLS proposal. A random walk proposal can be chosen by changing proposal_method = ‘wls’ to proposal_method = ‘rw’ in the mcmseq.fit function. If proposal_method = ‘rw’, then a “step size” or standard deviation for the random walk proposal distribution must be selected (rw_sd_betas). This parameter may need to be tuned in order to achieve appropriate mixing and acceptance probabilities.</p>
+<p>Similarly, the dispersion parameters are also updated using a random walk proposal with a standard deviation of rw_sd_log_alpha. This parameter may need to be tuned in order to achieve appropriate mixing and acceptance probabilities.</p>
+<p>For random walk proposals, acceptance rates around 23% are considered optimal. In practice, we filter out features that have acceptance probabilities less than 10%. In addition, we use Geweke statistics to evaluate mixing and convergence. Geweke statistics compare the mean values of each paramter during the first 20% of iterations (after burn in) to the mean in the last 50%. If the chain is converged, these two means should be similar. Small p-values for Geweke statistics indicate that the means are different and that model has not converged and that the number of iterations should be increased. If many features have low acceptance rates, you should also consider changing rw_sd_log_alpha (or rw_sd_betas for coefficients). To increase acceptance rates, reduce the value of rw_sd_log_alpha. To decrease acceptance rates increase rw_sd_log_alpha. Before running mcmseq on your full dataset, you may want to do a test run with a small number of features (1,000) and adjust random walk standard deviations as needed.</p>
+</div>
+<div id="convergence-options" class="section level4">
+<h4><em>Convergence Options</em></h4>
+<table>
+<colgroup>
+<col width="25%"></col>
+<col width="55%"></col>
+<col width="18%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">Option</th>
+<th align="left">Description</th>
+<th align="left">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">prop.accepts.betas</td>
+<td align="left">Minimum acceptance rate for regression coefficients to be considered converged.</td>
+<td align="left">0.1</td>
+</tr>
+<tr class="even">
+<td align="left">prop.accepts.alphas</td>
+<td align="left">Minimum acceptance rate for dispersion parameters to be considered converged.</td>
+<td align="left">0.1</td>
+</tr>
+<tr class="odd">
+<td align="left">geweke.p</td>
+<td align="left">Minimum (FDR adjusted) Geweke p-value for a paramter to be considered converged.</td>
+<td align="left">0.05</td>
+</tr>
+</tbody>
+</table>
+<p>The mcmseq.fit function returns information on genes that may have failed to converge. By default, genes with acceptance rates for regression coefficients or dispersions less than 10% or Geweke p-values less than 0.05 are flagged as convergence failures. These thresholds can be adjusted by the user using the prop.accepts.betas (minimum acceptance rate for regression coefficients to be considered converged), prop.accepts.alphas (minimum acceptance rate for dispersion paramters to be considered converged), and geweke.p (minimum Geweke p-value for a model paramter to be considered converged) arguments. We do not suggest using values less than our defaults; more stringent convergence criteria may be used by increasing these values.</p>
+</div>
+</div>
+<div id="mcmseq.summary" class="section level3">
+<h3>mcmseq.summary</h3>
+<div id="required-arguments-1" class="section level4">
+<h4><em>Required Arguments</em></h4>
+<table style="width:100%;">
+<colgroup>
+<col width="18%"></col>
+<col width="60%"></col>
+<col width="20%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">Argument</th>
+<th align="left">Description</th>
+<th align="left">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">mcmseqModel</td>
+<td align="left">a mcmseq objet resulting from mcmseq.fit.</td>
+<td align="left"></td>
+</tr>
+<tr class="even">
+<td align="left">summarizeWhat</td>
+<td align="left">character string indicating what to summarize:“coefficient” to summarize fixed effect coefficients or “contrast” to summarize contrasts</td>
+<td align="left">“coefficient”</td>
+</tr>
+<tr class="odd">
+<td align="left">which</td>
+<td align="left">character string or numeric indicator of which coefficient or contrast to summarize</td>
+<td align="left">1</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="filtering-options" class="section level4">
+<h4><em>Filtering Options</em></h4>
+<table>
+<colgroup>
+<col width="25%"></col>
+<col width="55%"></col>
+<col width="18%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">Option</th>
+<th align="left">Description</th>
+<th align="left">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">prop.accepts.betas</td>
+<td align="left">range of acceptance rates for regression coefficients where model is considered converged.</td>
+<td align="left">c(0.1,1)</td>
+</tr>
+<tr class="even">
+<td align="left">prop.accepts.alphas</td>
+<td align="left">range of acceptance rates for dispersion parameters where model is considered converged.</td>
+<td align="left">c(0.1, 0.7)</td>
+</tr>
+<tr class="odd">
+<td align="left">filter_by</td>
+<td align="left">optional character string which variable to use to filter: “posterior_median”: filter by posterior mean (default: greater than filter_val); “posterior_median_abs”: filter by absolute value of posterior mean (default: greater than filter_val); “BF”: filter by bayes factor (default: greater than filter_val); “exact_pval”: filter exact p-value (default:less than filter_val); “BH_adjusted_pval”: filter by adjusted p-value (default: less than filtre_val)</td>
+<td align="left">NULL</td>
+</tr>
+<tr class="even">
+<td align="left">filter_val</td>
+<td align="left">numeric variable or vector indicating the threshold for filtering based on the variable(s) in filter_by</td>
+<td align="left">NULL</td>
+</tr>
+<tr class="odd">
+<td align="left">gt</td>
+<td align="left">logical (TRUE or FALSE) or vector of logicals indicating if values greater than filter_val(s) should be excluded from the results table.</td>
+<td align="left">See description for filter_val.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="ordering-options" class="section level4">
+<h4><em>Ordering Options</em></h4>
+<table>
+<colgroup>
+<col width="25%"></col>
+<col width="55%"></col>
+<col width="18%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">Option</th>
+<th align="left">Description</th>
+<th align="left">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">order_by</td>
+<td align="left">character string or vector of character strings which variable(s) to order the results table by: “posterior_median”: order by posterior median (default decreasing order); “posterior_median_abs”: order by absolute value of the median (default decreasing order); “BF”: order by bayes factor (default decreasing order); “exact_pval”: order by exact p-value (default increasing order); “BH_adjusted_pval”: Order by adjusted p-value (default increasing order)</td>
+<td align="left">Defaults to ordering of the counts matrix</td>
+</tr>
+<tr class="even">
+<td align="left">decreasing</td>
+<td align="left">logical (TRUE or FALSE) indicating if the results table should appear in decreasing order</td>
+<td align="left">See order_by for defaults.</td>
+</tr>
+<tr class="odd">
+<td align="left">log2</td>
+<td align="left">logical (TRUE or FALSE) indicating if log2 scale should be used (instead of natural log scale)</td>
+<td align="left">FALSE</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="convergence-options-1" class="section level4">
+<h4><em>Convergence Options</em></h4>
+<table>
+<colgroup>
+<col width="25%"></col>
+<col width="55%"></col>
+<col width="18%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">Option</th>
+<th align="left">Description</th>
+<th align="left">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">prop.accepts.betas</td>
+<td align="left">Minimum acceptance rate for regression coefficients to be considered converged.</td>
+<td align="left">0.1</td>
+</tr>
+<tr class="even">
+<td align="left">prop.accepts.alphas</td>
+<td align="left">Minimum acceptance rate for dispersion parameters to be considered converged.</td>
+<td align="left">0.1</td>
+</tr>
+<tr class="odd">
+<td align="left">geweke.p</td>
+<td align="left">Minimum (FDR adjusted) Geweke p-value for a paramter to be considered converged.</td>
+<td align="left">0.05</td>
+</tr>
+</tbody>
+</table>
+<p>By default, the mcmseq.summary function filters out genes that may have failed to converge. By default, genes with acceptance rates for regression coefficients or dispersions less than 10% or Geweke p-values less than 0.05 are filtered from results. These thresholds can be adjusted by the user using the prop.accepts.betas (minimum acceptance rate for regression coefficients to be considered converged), prop.accepts.alphas (minimum acceptance rate for dispersion paramters to be considered converged), and geweke.p (minimum Geweke p-value for a model paramter to be considered converged) arguments. We do not suggest using values less than our defaults; more stringent convergence criteria may be used by increasing these values.</p>
+</div>
+</div>
+</div>
+<div id="an-example-mcmseq-analysis-using-default-priors" class="section level2">
+<h2>An Example MCMSeq Analysis Using Default Priors</h2>
+<p>We will perform an analysis on a simulated dataset. The data is included as part of the mcmseq package and includes simulated expression count data on 6 subjects (ids 1 to 6): 3 control subjects (group = 0) and 3 treatment subjects (group = 1). All subjects are measured at 2 timepoints, baseline (time = 0) and follow-up (time = 1). 1,000 genes are included in the dataset, 200 of which were simulated to have changes in expression from baseline to follow up in the treatment group only. First load the data:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Load the library</span>
+<span class="kw">library</span>(mcmseq)
+
+<span class="co"># Load the data</span>
+<span class="kw">data</span>(<span class="st">&quot;simdata&quot;</span>)
+
+<span class="kw">names</span>(simdata)
+<span class="co">#&gt; [1] &quot;counts&quot;   &quot;metadata&quot; &quot;param&quot;    &quot;de&quot;</span>
+
+<span class="co"># metadata has information about the the study design</span>
+<span class="co"># each row is a sample and corresponds to a column</span>
+<span class="co"># in the counts matrix</span>
+metadata &lt;-<span class="st"> </span>simdata<span class="op">$</span>metadata
+metadata
+<span class="co">#&gt;    ids group time</span>
+<span class="co">#&gt; 1    1     0    0</span>
+<span class="co">#&gt; 2    2     0    0</span>
+<span class="co">#&gt; 3    3     0    0</span>
+<span class="co">#&gt; 4    4     1    0</span>
+<span class="co">#&gt; 5    5     1    0</span>
+<span class="co">#&gt; 6    6     1    0</span>
+<span class="co">#&gt; 7    1     0    1</span>
+<span class="co">#&gt; 8    2     0    1</span>
+<span class="co">#&gt; 9    3     0    1</span>
+<span class="co">#&gt; 10   4     1    1</span>
+<span class="co">#&gt; 11   5     1    1</span>
+<span class="co">#&gt; 12   6     1    1</span>
+
+<span class="co"># The counts matrix has the same number of columns as</span>
+<span class="co"># rows in metadata.  The columns of the counts matrix</span>
+<span class="co"># are in the same order as the rows of the metadata.</span>
+counts &lt;-<span class="st"> </span>simdata<span class="op">$</span>counts
+<span class="kw">head</span>(counts)
+<span class="co">#&gt;      [,1] [,2] [,3] [,4] [,5] [,6] [,7] [,8] [,9] [,10] [,11] [,12]</span>
+<span class="co">#&gt; [1,]   85   87  204  109  118  196  234   75  199    44    90   183</span>
+<span class="co">#&gt; [2,] 1954 3945 1725 1798 2749 2649 1654 5933 2028  1627  1703  3088</span>
+<span class="co">#&gt; [3,]  147   67   76   43   72  148  155   91  103    36    55   144</span>
+<span class="co">#&gt; [4,]  541  884  818  707  573  334  683  738  814   819   794   465</span>
+<span class="co">#&gt; [5,]  433  535  754 1281 2781 1746 1619 1691  153    83    84   159</span>
+<span class="co">#&gt; [6,]   27   28   29   17   23   39   47   18   25    14    27    16</span></code></pre></div>
+<p>The goal of our analysis will be to compare changes over time between the control and treatment groups. We will fit the following model to the data:</p>
+<span class="math display">\[\begin{eqnarray}
+ \label{eq:sim_data}
+Y_{gij} &amp;\sim&amp; \mathcal{NB}(\mu_{gij}, \alpha_g) \nonumber \\
+\log(\mu_{gij}) &amp;=&amp; \beta_{g0} + \beta_{g1} I_{T_i} + \beta_{g2} I_{F_{ij}} + \beta_{g3}I_{T_i} I_{F_{ij}} + b_{gi} + \rho_{ij} \nonumber \\
+b_{gi} &amp;\sim&amp; \mathcal{N}(0, \sigma_{gb}^2) \nonumber
+\end{eqnarray}\]</span>
+<p>where <span class="math inline">\(I_{T_i}\)</span> is an indicator function that equals 1 if subject <span class="math inline">\(i\)</span> is in the treatment group, <span class="math inline">\(I_{F_{ij}}\)</span> is a similar indicator for if observation <span class="math inline">\(j\)</span> is the follow-up, <span class="math inline">\(b_{gi}\)</span> is the random intercept for gene <span class="math inline">\(g\)</span> and subject <span class="math inline">\(i\)</span> and <span class="math inline">\(\rho_{ij}\)</span> is an offset for subject <span class="math inline">\(i\)</span> at observation <span class="math inline">\(j\)</span> to account for differences in sequencing depth.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Create the fixed effects model formula</span>
+f &lt;-<span class="st"> </span><span class="er">~</span><span class="st"> </span>group<span class="op">*</span>time</code></pre></div>
+<div id="setting-up-contrasts" class="section level3">
+<h3>Setting Up Contrasts</h3>
+<p>In addition, we are interested in the following contrasts or linear combinations of regression parameters:</p>
+<ul>
+<li><p><span class="math inline">\(\beta_{g1} + \beta_{g3} = 0\)</span> tests for differences in expression between the treatment and the control group at follow-up</p></li>
+<li><p><span class="math inline">\(\beta_{g2} + \beta_{g3} = 0\)</span> tests for a change in expression over time in the treatment group</p></li>
+</ul>
+<p>The mcmseq fitting function allows users to specify custom contrasts or linear combinations of the fixed effects regression coefficients for testing through the contrast_mat option. The contrast matrix must have the same number of columns as fixed effects and each row corresponds to a different contrast to test. In addition, the user can specify contrast names either by naming the rows of the contrast matrix of by supplying a character vector of contrast names to the contrast_names option.</p>
+<p>The fixed effects in the contrast matrix must be in the same order specified by the model formula. If you are unsure of the ordering, mcmseq.fit uses the model.matrix function to create a design matrix for the fixed effects based on the fixed_effects formula supplied by the user. To see the design matrix for the formula and create the contrast matrix:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Look at the fixed effects design matrix to develop the contrast_mat</span>
+<span class="kw">head</span>(<span class="kw">model.matrix</span>(f, <span class="dt">data =</span> metadata))
+<span class="co">#&gt;   (Intercept) group time group:time</span>
+<span class="co">#&gt; 1           1     0    0          0</span>
+<span class="co">#&gt; 2           1     0    0          0</span>
+<span class="co">#&gt; 3           1     0    0          0</span>
+<span class="co">#&gt; 4           1     1    0          0</span>
+<span class="co">#&gt; 5           1     1    0          0</span>
+<span class="co">#&gt; 6           1     1    0          0</span>
+
+<span class="co"># Create the contrast matrix</span>
+contrasts &lt;-<span class="st"> </span><span class="kw">rbind</span>(<span class="kw">c</span>(<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">1</span>), <span class="co"># group + group:time</span>
+                   <span class="kw">c</span>(<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">1</span>)  <span class="co"># time + group:time </span>
+              )
+
+<span class="co"># Name the contrasts by specifying rownames</span>
+<span class="kw">rownames</span>(contrasts) &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;Treatment_v_Control_at_FollowUp&quot;</span>, 
+                         <span class="st">&quot;FollowUp_v_Baseline_in_Treatment&quot;</span>)
+
+<span class="co"># View the contrast matrix</span>
+contrasts
+<span class="co">#&gt;                                  [,1] [,2] [,3] [,4]</span>
+<span class="co">#&gt; Treatment_v_Control_at_FollowUp     0    1    0    1</span>
+<span class="co">#&gt; FollowUp_v_Baseline_in_Treatment    0    0    1    1</span></code></pre></div>
+</div>
+<div id="fitting-the-model" class="section level3">
+<h3>Fitting the Model</h3>
+<p>To fit the model, we use the mcmseq.fit function. Default values are specified for all priors. The counts argument takes a data frame or matrix of counts, the columns of which must be in the same order as the rows of sample_data data frame, which contains metadata on each sample. All fixed effects specified in the fixed_effects formula, as well as any random effects specified in the random_intercept option, must be included in the sample_data data frame. To include a random intercept for each subject in the model, specify the name of the sample_data column that contains the subject identifier. By default, the mcmseq.fit will use rownames of the counts matrix to identify genes. If you would like to use a different set of gene names, you can supply a character vector of names in the same order as the rows of the counts matrix to the gene_names option. Since we named the rows of our contrast matrix, we leave the contrast_names option at its default NULL value. To quickly illustrate how the package works, we set the number of iterations to 1,000, however, in practice we suggest using a much higher number of iterations for mixed model fits (&gt;30,000). prop_burn_in specifies the proportion of the chain that should be used for burn in, to allow for MCMC convergence. The default is 10%.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Fit the Model</span>
+fit.default &lt;-<span class="st"> </span><span class="kw">mcmseq.fit</span>(<span class="dt">counts=</span>counts, 
+                       <span class="dt">fixed_effects =</span> f,
+                       <span class="dt">sample_data =</span> metadata,
+                       <span class="dt">random_intercept =</span> <span class="st">'ids'</span>, 
+                       <span class="dt">gene_names =</span> <span class="kw">paste0</span>(<span class="st">'gene_'</span>, <span class="kw">seq</span>(<span class="dv">1</span>,<span class="dv">1000</span>,<span class="dv">1</span>)),
+                       <span class="dt">contrast_mat =</span> contrasts,
+                       <span class="dt">contrast_names =</span> <span class="ot">NULL</span>,
+                       <span class="dt">n_it =</span> <span class="dv">1000</span>,
+                       <span class="dt">prop_burn_in =</span> <span class="fl">0.1</span>
+)
+<span class="co">#&gt; [1] &quot;2 genes did not meet convergence criteria. Check Geweke statistics and acceptance rates to diagnose problems.&quot;</span>
+
+<span class="co"># Look at the mcmseq fit object</span>
+<span class="kw">class</span>(fit.default)
+<span class="co">#&gt; [1] &quot;list&quot;</span>
+
+<span class="kw">names</span>(fit.default)
+<span class="co">#&gt;  [1] &quot;betas_est&quot;            &quot;contrast_est&quot;         &quot;alphas_est&quot;          </span>
+<span class="co">#&gt;  [4] &quot;sig2_est&quot;             &quot;accepts_betas&quot;        &quot;accepts_alphas&quot;      </span>
+<span class="co">#&gt;  [7] &quot;geweke_all&quot;           &quot;gene_names&quot;           &quot;n_it&quot;                </span>
+<span class="co">#&gt; [10] &quot;fixed_effects&quot;        &quot;random_intercept&quot;     &quot;contrast_mat&quot;        </span>
+<span class="co">#&gt; [13] &quot;log_offset&quot;           &quot;proposal_method&quot;      &quot;prior_sd_betas&quot;      </span>
+<span class="co">#&gt; [16] &quot;prior_u_re_var&quot;       &quot;prior_v_re_var&quot;       &quot;prior_sd_log_alpha&quot;  </span>
+<span class="co">#&gt; [19] &quot;prior_mean_log_alpha&quot; &quot;rw_sd_log_alpha&quot;      &quot;starting_betas&quot;      </span>
+<span class="co">#&gt; [22] &quot;rw_sd_betas&quot;          &quot;prop_burn_in&quot;         &quot;num_accept&quot;          </span>
+<span class="co">#&gt; [25] &quot;convergence_failures&quot;</span></code></pre></div>
+<p>The resulting mcmseq object is a list. Elements 8-24 of the list provide information about the user supplied and/or default settings used to fit the model. “betas_est” is a 3 dimensional array (number of fixed effects x 4 x number of genes), which contains the posterior median, standard deviation, Bayes factor, and raw pseudo p-value for each regression coefficient for each gene. Similarly, “contrast_est” is a 3 dimensional array (number contrasts x 4 x number of genes), containing the same information for each contrast. “alphas_est” contains the dispersion parameters for each gene, and “sig2_est” contains the random intercept variance for each gene.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># See regression coefficient estimates for the first gene</span>
+fit.default<span class="op">$</span>betas_est[,,<span class="dv">1</span>]
+<span class="co">#&gt;                 median   std_dev     BF_exact p_val_exact</span>
+<span class="co">#&gt; (Intercept)  4.8694018 0.4068908 2.271221e-96   0.0000000</span>
+<span class="co">#&gt; group        0.1428928 0.5883450 1.221343e+01   0.7977778</span>
+<span class="co">#&gt; time         0.2714341 0.3602950 1.452145e+01   0.4333333</span>
+<span class="co">#&gt; group:time  -0.7218889 0.5451705 4.973791e+00   0.2111111</span>
+
+<span class="co"># See the contrast estimates for the first gene</span>
+fit.default<span class="op">$</span>contrast_est[,,<span class="dv">1</span>]
+<span class="co">#&gt;                                      median   std_dev BF_exact p_val_exact</span>
+<span class="co">#&gt; Treatment_v_Control_at_FollowUp  -0.5408695 0.5863383 7.234984   0.3177778</span>
+<span class="co">#&gt; FollowUp_v_Baseline_in_Treatment -0.4336834 0.4151646 8.780595   0.3111111</span>
+
+<span class="co"># See the dispersion and random intercept variance estimates for the</span>
+<span class="co"># first 10 genes</span>
+fit.default<span class="op">$</span>alphas_est[<span class="dv">1</span><span class="op">:</span><span class="dv">10</span>]
+<span class="co">#&gt;  [1] 0.180651617 0.082478634 0.001088894 0.024850605 0.525963782</span>
+<span class="co">#&gt;  [6] 0.052186517 0.124177542 0.086463166 0.011706786 0.114542020</span>
+fit.default<span class="op">$</span>sig2_est[<span class="dv">1</span><span class="op">:</span><span class="dv">10</span>]
+<span class="co">#&gt;  [1] 0.13376809 0.16874057 0.29997022 0.07120016 0.06213007 0.05173427</span>
+<span class="co">#&gt;  [7] 0.06210531 0.38082003 0.01441222 0.15388871</span></code></pre></div>
+<p>The mcmseq object also contains information about genes that may have failed to converge. “accepts_betas” contains the number of iterations where a proposal for the regression coefficients was accepted, which provides information about the mixing of the chain. Similarly, “accepts_alphas” provides the number of accepts for updates of the dispersion parameter. “geweke_all” is a matrix of raw (unadjusted) Geweke p-values (number of rows = number of genes, columns = fixed effects, the random effect variance (if applicable), and dispersion). The last element of the mcmseq object, “convergence failures” contains information on genes that may have failed to converge based on the information from “accepts_alphas”, “accepts_betas”, and “geweke_all”. The raw p-values in “geweke_all” are FDR adjusted using a Benjamini-Hochberg correction to determine genes that have significant Geweke p-values.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># See convergence failures, the Geweke p-values and acceptance rates</span>
+fit.default<span class="op">$</span>convergence_failures
+<span class="co">#&gt;   index gene_names X.Intercept._BH_adjusted_geweke_p</span>
+<span class="co">#&gt; 1    84    gene_84                         0.8898479</span>
+<span class="co">#&gt; 2   808   gene_808                         0.8691127</span>
+<span class="co">#&gt;   group_BH_adjusted_geweke_p time_BH_adjusted_geweke_p</span>
+<span class="co">#&gt; 1                  0.1191734                0.98768544</span>
+<span class="co">#&gt; 2                  0.8440680                0.01075815</span>
+<span class="co">#&gt;   group.time_BH_adjusted_geweke_p sig2_BH_adjusted_geweke_p</span>
+<span class="co">#&gt; 1                       0.8771373              9.841182e-06</span>
+<span class="co">#&gt; 2                       0.8392530              1.357453e-01</span>
+<span class="co">#&gt;   alphas_BH_adjusted_geweke_p accept_rate_betas accept_rate_alphas</span>
+<span class="co">#&gt; 1                   0.8058210             0.202              0.199</span>
+<span class="co">#&gt; 2                   0.7856535             0.512              0.169</span></code></pre></div>
+<p>It is likely that a handful of genes in our example have failed to converge due to low Geweke p-values since we have run so few MCMC iterations.</p>
+</div>
+</div>
+<div id="what-if-a-large-number-of-genes-fail-to-converge" class="section level2">
+<h2>What if a large number of genes fail to converge?</h2>
+<p>If a large number of genes fail to converge, you should inspect the “convergence_failures” for low acceptance rates and low Geweke p-values. If features fail due to low Geweke p-values, you might consider increasing the number of MCMC iterations, n_it. If the acceptance rate for the dispersion parameter is low or very high, try adjusting rw_sd_log_alpha. Reducing rw_sd_log_alpha will increase acceptance rates, while increasing rw_sd_log_alpha will reduce acceptance rates. If features fail due to the acceptance rates for the regression coefficients, you might try using a random walk proposal for the coefficients instead of the WLS method for the subset of genes that failed to converge.</p>
+<div id="summarizing-results" class="section level3">
+<h3>Summarizing Results</h3>
+<p>Results can be more easily summarized with the mcmseq.summary function, which calculates Benjamini-Hochberg adjusted p-values and allows for filtering and ordering of results into tables. By default, results will be presented in the same order in which they were supplied in the counts matrix. However, results can be ordered by “posterior_median” (the posterior median of the regression coefficient or contrast of interest), “posterior_median_abs” (the absolute value of the posterior median), “BF” the Bayes factor, “exact_pval” (raw p-value), or “BH_adjusted_pval” (the Benjamini-Hochberg adjusted p-value). Results can be retrieved in either descending or ascending order by setting the decreasing option to TRUE or FALSE, respectively.</p>
+<p>Results can also be filtered by one or more of these same variables, using the filter_by option, which takes a character vector of variables to filter by. The filter_val option allows the user to specify filtering values for each variable listed in filtery_by. The gt option is a vector of logicals indicating if values greater than (vs. less than) filter_val(s) should be excluded from the results table.</p>
+<p>By default results are presented on the natural log scale. If you would prefer to see results on the log2 scale, use the log2 = TRUE option.</p>
+<p>Importantly, the mcmseq.summary function also filters out genes that may not have converged. By default, genes with acceptance rates for regression coefficients or dispersions less than 10% or FDR adjusted Geweke p-values less than 0.05 are considered convergence failures and are filtered from the results. These thresholds can be adjusted by the user using the prop.accepts.betas (minimum acceptance rate for regression coefficients to be considered converged), prop.accepts.alphas (minimum acceptance rate for dispersion paramters to be considered converged), and geweke.p (minimum Geweke p-value for a model paramter to be considered converged) arguments. We do not suggest using values less than our defaults; more stringent convergence criteria may be used by increasing these values.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Summarize results for the first contrast, on the log2 scale</span>
+c1_table &lt;-<span class="st"> </span><span class="kw">mcmseq.summary</span>(<span class="dt">mcmseqModel =</span> fit.default, 
+                 <span class="dt">summarizeWhat=</span><span class="st">&quot;contrast&quot;</span>,  
+                 <span class="dt">which =</span> <span class="st">&quot;Treatment_v_Control_at_FollowUp&quot;</span>,
+                  <span class="dt">log2=</span><span class="ot">TRUE</span> 
+            )
+<span class="co">#&gt; [1] &quot;2 genes did not meet convergence criteria. Check Geweke statistics and acceptance rates to diagnose problems.&quot;</span>
+
+<span class="kw">dim</span>(c1_table)
+<span class="co">#&gt; [1] 998   6</span>
+
+<span class="kw">head</span>(c1_table)
+<span class="co">#&gt;     Gene posterior_median posterior_SD          BF  exact_pval</span>
+<span class="co">#&gt; 1 gene_1       -0.7803098    0.8459074  7.23498386 0.317777778</span>
+<span class="co">#&gt; 2 gene_2       -0.6026167    0.7529665 10.30388200 0.402222222</span>
+<span class="co">#&gt; 3 gene_3       -0.8229318    0.8470402  6.42886282 0.235555556</span>
+<span class="co">#&gt; 4 gene_4       -0.3030710    0.5360918 18.19791555 0.468888889</span>
+<span class="co">#&gt; 5 gene_5       -3.5532010    1.1954443  0.01544427 0.006666667</span>
+<span class="co">#&gt; 6 gene_6       -0.8206548    0.5695355  4.59159354 0.102222222</span>
+<span class="co">#&gt;   BH_adjusted_pval</span>
+<span class="co">#&gt; 1       0.75134995</span>
+<span class="co">#&gt; 2       0.79019248</span>
+<span class="co">#&gt; 3       0.69551611</span>
+<span class="co">#&gt; 4       0.83413745</span>
+<span class="co">#&gt; 5       0.09642512</span>
+<span class="co">#&gt; 6       0.51265215</span>
+
+<span class="co"># Filter out genes with effect sizes less than 1 and BH adjusted p-values &gt; 0.05</span>
+<span class="co"># Order results by BH adjusted p-value</span>
+c1_table_filtered &lt;-<span class="st"> </span><span class="kw">mcmseq.summary</span>(<span class="dt">mcmseqModel =</span> fit.default, 
+                 <span class="dt">summarizeWhat=</span><span class="st">&quot;contrast&quot;</span>,  
+                 <span class="dt">which =</span> <span class="st">&quot;Treatment_v_Control_at_FollowUp&quot;</span>,  
+                 <span class="dt">prop.accepts.betas =</span> <span class="kw">c</span>(<span class="fl">0.1</span>,<span class="dv">1</span>), 
+                 <span class="dt">prop.accepts.alphas  =</span> <span class="kw">c</span>(<span class="fl">0.1</span>,<span class="fl">0.7</span>),
+                 <span class="dt">order_by =</span> <span class="st">&quot;BH_adjusted_pval&quot;</span>, 
+                 <span class="dt">decreasing =</span> <span class="ot">FALSE</span>,
+                 <span class="dt">filter_by =</span> <span class="kw">c</span>(<span class="st">&quot;BH_adjusted_pval&quot;</span>, <span class="st">&quot;posterior_median_abs&quot;</span>),
+                 <span class="dt">filter_val =</span> <span class="kw">c</span>(<span class="fl">0.05</span>, <span class="dv">1</span>),
+                 <span class="dt">gt =</span> <span class="kw">c</span>(<span class="ot">FALSE</span>, <span class="ot">TRUE</span>),
+                  <span class="dt">log2=</span><span class="ot">TRUE</span> 
+            )
+<span class="co">#&gt; [1] &quot;Vector supplied for prop.accepts.betas  Only the first element will be used.&quot;</span>
+<span class="co">#&gt; [1] &quot;Vector supplied for prop.accepts.betas  Only the first element will be used.&quot;</span>
+<span class="co">#&gt; [1] &quot;2 genes did not meet convergence criteria. Check Geweke statistics and acceptance rates to diagnose problems.&quot;</span>
+
+<span class="kw">dim</span>(c1_table_filtered)
+<span class="co">#&gt; [1] 50  6</span>
+
+<span class="kw">head</span>(c1_table_filtered)
+<span class="co">#&gt;         Gene posterior_median posterior_SD           BF exact_pval</span>
+<span class="co">#&gt; 7     gene_7        -3.599890    0.6953653 1.622086e-04          0</span>
+<span class="co">#&gt; 9     gene_9        -1.946692    0.2681448 5.447767e-02          0</span>
+<span class="co">#&gt; 54   gene_54        -1.839808    0.3580253 1.097296e-01          0</span>
+<span class="co">#&gt; 61   gene_61        -1.755441    0.4364417 1.141980e-01          0</span>
+<span class="co">#&gt; 245 gene_246         1.963091    0.3122343 9.411492e-20          0</span>
+<span class="co">#&gt; 252 gene_253         1.056567    0.2532189 4.792269e-02          0</span>
+<span class="co">#&gt;     BH_adjusted_pval</span>
+<span class="co">#&gt; 7                  0</span>
+<span class="co">#&gt; 9                  0</span>
+<span class="co">#&gt; 54                 0</span>
+<span class="co">#&gt; 61                 0</span>
+<span class="co">#&gt; 245                0</span>
+<span class="co">#&gt; 252                0</span>
+
+<span class="co"># Do the same for the group coefficient which represnts the difference </span>
+<span class="co"># between treatment and control at baseline</span>
+group_table_filtered &lt;-<span class="st"> </span><span class="kw">mcmseq.summary</span>(<span class="dt">mcmseqModel =</span> fit.default, 
+                 <span class="dt">summarizeWhat=</span><span class="st">&quot;coefficient&quot;</span>,  
+                 <span class="dt">which =</span> <span class="st">&quot;group&quot;</span>,  
+                 <span class="dt">prop.accepts.betas =</span> <span class="kw">c</span>(<span class="fl">0.1</span>,<span class="dv">1</span>), 
+                 <span class="dt">prop.accepts.alphas  =</span> <span class="kw">c</span>(<span class="fl">0.1</span>,<span class="fl">0.7</span>),
+                 <span class="dt">order_by =</span> <span class="st">&quot;BH_adjusted_pval&quot;</span>, 
+                 <span class="dt">decreasing =</span> <span class="ot">FALSE</span>,
+                 <span class="dt">filter_by =</span> <span class="kw">c</span>(<span class="st">&quot;BH_adjusted_pval&quot;</span>, <span class="st">&quot;posterior_median_abs&quot;</span>),
+                 <span class="dt">filter_val =</span> <span class="kw">c</span>(<span class="fl">0.05</span>, <span class="dv">1</span>),
+                 <span class="dt">gt =</span> <span class="kw">c</span>(<span class="ot">FALSE</span>, <span class="ot">TRUE</span>),
+                  <span class="dt">log2=</span><span class="ot">TRUE</span> 
+            )
+<span class="co">#&gt; [1] &quot;Vector supplied for prop.accepts.betas  Only the first element will be used.&quot;</span>
+<span class="co">#&gt; [1] &quot;Vector supplied for prop.accepts.betas  Only the first element will be used.&quot;</span>
+<span class="co">#&gt; [1] &quot;2 genes did not meet convergence criteria. Check Geweke statistics and acceptance rates to diagnose problems.&quot;</span>
+
+<span class="kw">dim</span>(c1_table_filtered)
+<span class="co">#&gt; [1] 50  6</span>
+
+<span class="kw">head</span>(c1_table_filtered)
+<span class="co">#&gt;         Gene posterior_median posterior_SD           BF exact_pval</span>
+<span class="co">#&gt; 7     gene_7        -3.599890    0.6953653 1.622086e-04          0</span>
+<span class="co">#&gt; 9     gene_9        -1.946692    0.2681448 5.447767e-02          0</span>
+<span class="co">#&gt; 54   gene_54        -1.839808    0.3580253 1.097296e-01          0</span>
+<span class="co">#&gt; 61   gene_61        -1.755441    0.4364417 1.141980e-01          0</span>
+<span class="co">#&gt; 245 gene_246         1.963091    0.3122343 9.411492e-20          0</span>
+<span class="co">#&gt; 252 gene_253         1.056567    0.2532189 4.792269e-02          0</span>
+<span class="co">#&gt;     BH_adjusted_pval</span>
+<span class="co">#&gt; 7                  0</span>
+<span class="co">#&gt; 9                  0</span>
+<span class="co">#&gt; 54                 0</span>
+<span class="co">#&gt; 61                 0</span>
+<span class="co">#&gt; 245                0</span>
+<span class="co">#&gt; 252                0</span></code></pre></div>
+</div>
+</div>
+<div id="an-example-mcmseq-analysis-using-custom-priors-sharing-information-across-genes" class="section level2">
+<h2>An Example MCMSeq Analysis Using Custom Priors: Sharing Information Across Genes</h2>
+<p>It is possible to share information across genes via the prior distribution for the dispersion parameters. For convenience the trended.dispersion function can be used to develop a prior that takes into account potential mean dispersion relationships. The function first normalizes counts to adjust for differences in sequencing depth between samples by scaling all samples to the median library size. The mean normalized counts are then calculated for each gene and the method of moments is used to obtain a naive estimate of the dispersion parameter. A loess curve is then fit to describe the relationship between the log(mean counts) and the log(dispersion). Predictions from this curve can be used as prior means for the log normal prior on the dispersion paramter for each gene. The residual standard error of the model, potentially multiplied by a variance inflation factor, can be used for the prior standard deviation</p>
+<p>First we run the trended.dispersion function.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Develop the trended dispersion prior</span>
+disp.prior &lt;-<span class="st"> </span><span class="kw">trended.dispersion</span>(counts, <span class="dt">span=</span><span class="dv">1</span>)</code></pre></div>
+<p><img src="data:image/png;base64,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YT4kHsMAzSBUJ0fAEXAE+gKBigzooYceCksttVTYeuut++J83oYj4Ag4AgUEKnrB1l577fD0008HhmQ4OQKOgCPQlwhUlIC++c1vavL5lVdeOfzoRz8KTMWTTT62ww479OU1eVuOgCPQTxCo6AX74IMPwve//30dflEKEzdCl0LGyx0BR6AcAhVVsDFjxmji+auuukrjf/CEZX/lTuD7HAFHwBEohUBFFeztt98OyyyzTNhss81KteHljoAj4AjUhUBFCWjdddfVwaiedqMufP0gR8ARKINARQlohhlm0EBEjM9MRLjgggv2iAU64IADypzCdzkCjoAjkI9ARSP0TTfdFLbYYov8o78o/e9//1t2v+90BBwBRyAPgYoMKO8gL3MEHAFHoC8QqGgD6ouTeBuOgCPgCOQhkGsDYi6w2267Ley4447qescFX44OOuigcrt9nyPgCDgCuQjkqmB/+MMfwqGHHqrpN15++eUwbNiw3IOtkEyJTo6AI+AI1IpALgNKG/nkk09UCiIZfZbYh7Q0ePDg7C7fdgQcAUegIgIVbUCoYowBy6MHHnggMFh14sSJebu9zBFwBByBsgjkSkCffvpp2HbbbcOHH34Y3nrrrfD888+H1Vdfvaghxn8988wzynzIlpgdoFpU2TccAUfAEchBIFcCIunYD37wgzBw4MAwzTTTKHNhPf1RZ8011wyjRo1y5pMDrBc5Ao5AZQRyJaD0MGw8l156aTj11FPT4n6/Dh5nnnmmTtbY78GoAQAkZ2ZVYTlgwAD91XC4V60BAYQEspnOPPPMNRzV3KoVGZBdDi+MqVn/+c9/wj333BPIEZRnnLZjunnJ0JQjjjjCGVAND5npvffee2/tEMyy+/DDD4ff/e53Yb311quhFa9aLQLf+9731JPNFFptS8JYKtLpp58eZUZUrffCCy/EWWaZJcoNRZmiJ/7973+veHyjKsiXtGTTH3/8ceTXKFp11VXj3Xff3ajmO65dmaYpitoeZZqmKLnDo0xaWXQP//rXv/SdOfvsswvlkmtKy/bYY49CWaUVmZsu3nnnnZH3UNLCVKrer/d/61vfio888khbY4AoXJaeffbZKHagKBMQRjo8yznmmEM735577hnnn3/+ssc3YudFF10UZTbWKDapCCPghcySDJyNm2++eba4z7bbnQHxrGQut0gnnzx5cp/d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" /><!-- --></p>
+<p>We inspect the plot to determine if the smoothing paramter (span) for the loess regression should be adjusted. Higher values result in more smoothing. Once we are satisfied with the regression model, we fit the mcmcseq model as usual, using the prior mean and SD from the trended dispersion function.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Fit the Model</span>
+fit.custom &lt;-<span class="st"> </span><span class="kw">mcmseq.fit</span>(<span class="dt">counts=</span>counts, 
+                       <span class="dt">fixed_effects =</span> f,
+                       <span class="dt">sample_data =</span> metadata,
+                       <span class="dt">random_intercept =</span> <span class="st">'ids'</span>, 
+                       <span class="dt">gene_names =</span> <span class="kw">paste0</span>(<span class="st">'gene_'</span>, <span class="kw">seq</span>(<span class="dv">1</span>,<span class="dv">1000</span>,<span class="dv">1</span>)),
+                       <span class="dt">contrast_mat =</span> contrasts,
+                       <span class="dt">contrast_names =</span> <span class="ot">NULL</span>,
+                       <span class="dt">prior_mean_log_alpha =</span> disp.prior<span class="op">$</span>prior_mean_log_alpha,
+                       <span class="dt">prior_sd_log_alpha =</span> <span class="dv">2</span> <span class="op">*</span><span class="st"> </span>disp.prior<span class="op">$</span>prior_sd_log_alpha,
+                       <span class="dt">n_it =</span> <span class="dv">1000</span>,
+                       <span class="dt">prop_burn_in =</span> <span class="fl">0.1</span>
+)
+<span class="co">#&gt; [1] &quot;Models for all genes converged.&quot;</span></code></pre></div>
+<p>We can summarize the results as usual.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Summarize results for the first contrast, on the log2 scale</span>
+c1_table_custom &lt;-<span class="st"> </span><span class="kw">mcmseq.summary</span>(<span class="dt">mcmseqModel =</span> fit.custom, 
+                 <span class="dt">summarizeWhat=</span><span class="st">&quot;contrast&quot;</span>,  
+                 <span class="dt">which =</span> <span class="st">&quot;Treatment_v_Control_at_FollowUp&quot;</span>,
+                  <span class="dt">log2=</span><span class="ot">TRUE</span> 
+            )
+<span class="co">#&gt; [1] &quot;Models for all genes converged.&quot;</span>
+
+<span class="kw">dim</span>(c1_table_custom)
+<span class="co">#&gt; [1] 1000    6</span>
+
+<span class="kw">head</span>(c1_table_custom)
+<span class="co">#&gt;     Gene posterior_median posterior_SD         BF  exact_pval</span>
+<span class="co">#&gt; 1 gene_1       -0.9118780    0.9199783  5.7459401 0.237777778</span>
+<span class="co">#&gt; 2 gene_2       -0.5641734    0.8011995  9.8801265 0.415555556</span>
+<span class="co">#&gt; 3 gene_3       -0.8940824    0.8669880  5.7725777 0.226666667</span>
+<span class="co">#&gt; 4 gene_4       -0.3158675    0.4590379 16.8331211 0.428888889</span>
+<span class="co">#&gt; 5 gene_5       -3.4421720    0.9459918  0.1538366 0.008888889</span>
+<span class="co">#&gt; 6 gene_6       -0.8223873    0.5459479  5.3291471 0.135555556</span>
+<span class="co">#&gt;   BH_adjusted_pval</span>
+<span class="co">#&gt; 1        0.6912145</span>
+<span class="co">#&gt; 2        0.8155340</span>
+<span class="co">#&gt; 3        0.6797386</span>
+<span class="co">#&gt; 4        0.8163265</span>
+<span class="co">#&gt; 5        0.1185185</span>
+<span class="co">#&gt; 6        0.5488079</span>
+
+<span class="co"># Filter out genes with effect sizes less than 1 and BH adjusted p-values &gt; 0.05</span>
+<span class="co"># Order results by BH adjusted p-value</span>
+c1_table_custom_filtered &lt;-<span class="st"> </span><span class="kw">mcmseq.summary</span>(<span class="dt">mcmseqModel =</span> fit.custom, 
+                 <span class="dt">summarizeWhat=</span><span class="st">&quot;contrast&quot;</span>,  
+                 <span class="dt">which =</span> <span class="st">&quot;Treatment_v_Control_at_FollowUp&quot;</span>,  
+                 <span class="dt">prop.accepts.betas =</span> <span class="kw">c</span>(<span class="fl">0.1</span>), 
+                 <span class="dt">prop.accepts.alphas  =</span> <span class="kw">c</span>(<span class="fl">0.1</span>),
+                 <span class="dt">order_by =</span> <span class="st">&quot;BH_adjusted_pval&quot;</span>, 
+                 <span class="dt">decreasing =</span> <span class="ot">FALSE</span>,
+                 <span class="dt">filter_by =</span> <span class="kw">c</span>(<span class="st">&quot;BH_adjusted_pval&quot;</span>, <span class="st">&quot;posterior_median_abs&quot;</span>),
+                 <span class="dt">filter_val =</span> <span class="kw">c</span>(<span class="fl">0.05</span>, <span class="dv">1</span>),
+                 <span class="dt">gt =</span> <span class="kw">c</span>(<span class="ot">FALSE</span>, <span class="ot">TRUE</span>),
+                  <span class="dt">log2=</span><span class="ot">TRUE</span> 
+            )
+<span class="co">#&gt; [1] &quot;Models for all genes converged.&quot;</span>
+
+<span class="kw">dim</span>(c1_table_custom_filtered)
+<span class="co">#&gt; [1] 51  6</span>
+
+<span class="kw">head</span>(c1_table_custom_filtered)
+<span class="co">#&gt;         Gene posterior_median posterior_SD           BF exact_pval</span>
+<span class="co">#&gt; 7     gene_7        -3.617562    0.7195286 1.372626e-01          0</span>
+<span class="co">#&gt; 9     gene_9        -1.961482    0.2604556 2.011242e-22          0</span>
+<span class="co">#&gt; 51   gene_51        -1.391304    0.3345049 1.218143e-01          0</span>
+<span class="co">#&gt; 61   gene_61        -1.738009    0.4039275 2.265115e-02          0</span>
+<span class="co">#&gt; 174 gene_174        -1.410861    0.4364850 2.902883e-01          0</span>
+<span class="co">#&gt; 229 gene_229         1.382779    0.3518725 6.661919e-03          0</span>
+<span class="co">#&gt;     BH_adjusted_pval</span>
+<span class="co">#&gt; 7                  0</span>
+<span class="co">#&gt; 9                  0</span>
+<span class="co">#&gt; 51                 0</span>
+<span class="co">#&gt; 61                 0</span>
+<span class="co">#&gt; 174                0</span>
+<span class="co">#&gt; 229                0</span></code></pre></div>
+</div>
+<div id="an-example-mcmseq-analysis-without-random-effects" class="section level2">
+<h2>An Example MCMSeq Analysis Without Random Effects</h2>
+<p>The mcmseq.fit function can also fit model that do not include clusting or random effects. In this example we will fit a model to compare expression between the treatment and control group at follow-up. First we must filter out dataset to the appropriate samples:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Load the data</span>
+<span class="kw">data</span>(<span class="st">&quot;simdata&quot;</span>)
+
+<span class="kw">names</span>(simdata)
+<span class="co">#&gt; [1] &quot;counts&quot;   &quot;metadata&quot; &quot;param&quot;    &quot;de&quot;</span>
+
+<span class="co"># metadata has information about the the study design</span>
+<span class="co"># each row is a sample and corresponds to a column</span>
+<span class="co"># in the counts matrix</span>
+metadata &lt;-<span class="st"> </span>simdata<span class="op">$</span>metadata
+
+<span class="co"># Subset the metadata to the follow-up observations</span>
+metadata.glm &lt;-<span class="st"> </span>metadata[metadata<span class="op">$</span>time<span class="op">==</span><span class="dv">1</span>,]
+
+<span class="co"># The counts matrix has the same number of columns as</span>
+<span class="co"># rows in metadata.  The columns of the counts matrix</span>
+<span class="co"># are in the same order as the rows of the metadata.</span>
+counts &lt;-<span class="st"> </span>simdata<span class="op">$</span>counts
+<span class="kw">head</span>(counts)
+<span class="co">#&gt;      [,1] [,2] [,3] [,4] [,5] [,6] [,7] [,8] [,9] [,10] [,11] [,12]</span>
+<span class="co">#&gt; [1,]   85   87  204  109  118  196  234   75  199    44    90   183</span>
+<span class="co">#&gt; [2,] 1954 3945 1725 1798 2749 2649 1654 5933 2028  1627  1703  3088</span>
+<span class="co">#&gt; [3,]  147   67   76   43   72  148  155   91  103    36    55   144</span>
+<span class="co">#&gt; [4,]  541  884  818  707  573  334  683  738  814   819   794   465</span>
+<span class="co">#&gt; [5,]  433  535  754 1281 2781 1746 1619 1691  153    83    84   159</span>
+<span class="co">#&gt; [6,]   27   28   29   17   23   39   47   18   25    14    27    16</span>
+
+<span class="co"># Subset the metadata to the follow-up observations</span>
+counts.glm &lt;-<span class="st"> </span>counts[,metadata<span class="op">$</span>time<span class="op">==</span><span class="dv">1</span>]</code></pre></div>
+<p>We now fit the model using default priors. To fit a model without random effects, we simply leave out random_intercept argument or set random_intercept to NULL.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Fit the Model</span>
+fit.default.glm &lt;-<span class="st"> </span><span class="kw">mcmseq.fit</span>(<span class="dt">counts=</span>counts.glm, 
+                       <span class="dt">fixed_effects =</span> <span class="op">~</span><span class="st"> </span>group,
+                       <span class="dt">sample_data =</span> metadata.glm,
+                       <span class="dt">random_intercept =</span> <span class="ot">NULL</span>, 
+                       <span class="dt">gene_names =</span> <span class="kw">paste0</span>(<span class="st">'gene_'</span>, <span class="kw">seq</span>(<span class="dv">1</span>,<span class="dv">1000</span>,<span class="dv">1</span>)),
+                       <span class="dt">contrast_mat =</span> <span class="ot">NULL</span>,
+                       <span class="dt">contrast_names =</span> <span class="ot">NULL</span>,
+                       <span class="dt">n_it =</span> <span class="dv">1000</span>,
+                       <span class="dt">prop_burn_in =</span> <span class="fl">0.1</span>
+)
+<span class="co">#&gt; [1] &quot;Models for all genes converged.&quot;</span></code></pre></div>
+<p>We can summarize the results as usual:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">group_table_filtered &lt;-<span class="st"> </span><span class="kw">mcmseq.summary</span>(<span class="dt">mcmseqModel =</span> fit.default, 
+                 <span class="dt">summarizeWhat=</span><span class="st">&quot;coefficient&quot;</span>,  
+                 <span class="dt">which =</span> <span class="st">&quot;group&quot;</span>,  
+                 <span class="dt">prop.accepts.betas =</span> <span class="kw">c</span>(<span class="fl">0.1</span>,<span class="dv">1</span>), 
+                 <span class="dt">prop.accepts.alphas  =</span> <span class="kw">c</span>(<span class="fl">0.1</span>,<span class="fl">0.7</span>),
+                 <span class="dt">order_by =</span> <span class="st">&quot;BH_adjusted_pval&quot;</span>, 
+                 <span class="dt">decreasing =</span> <span class="ot">FALSE</span>,
+                 <span class="dt">filter_by =</span> <span class="kw">c</span>(<span class="st">&quot;BH_adjusted_pval&quot;</span>, <span class="st">&quot;posterior_median_abs&quot;</span>),
+                 <span class="dt">filter_val =</span> <span class="kw">c</span>(<span class="fl">0.05</span>, <span class="dv">1</span>),
+                 <span class="dt">gt =</span> <span class="kw">c</span>(<span class="ot">FALSE</span>, <span class="ot">TRUE</span>),
+                  <span class="dt">log2=</span><span class="ot">TRUE</span> 
+            )
+<span class="co">#&gt; [1] &quot;Vector supplied for prop.accepts.betas  Only the first element will be used.&quot;</span>
+<span class="co">#&gt; [1] &quot;Vector supplied for prop.accepts.betas  Only the first element will be used.&quot;</span>
+<span class="co">#&gt; [1] &quot;2 genes did not meet convergence criteria. Check Geweke statistics and acceptance rates to diagnose problems.&quot;</span>
+
+<span class="kw">dim</span>(c1_table_filtered)
+<span class="co">#&gt; [1] 50  6</span>
+
+<span class="kw">head</span>(c1_table_filtered)
+<span class="co">#&gt;         Gene posterior_median posterior_SD           BF exact_pval</span>
+<span class="co">#&gt; 7     gene_7        -3.599890    0.6953653 1.622086e-04          0</span>
+<span class="co">#&gt; 9     gene_9        -1.946692    0.2681448 5.447767e-02          0</span>
+<span class="co">#&gt; 54   gene_54        -1.839808    0.3580253 1.097296e-01          0</span>
+<span class="co">#&gt; 61   gene_61        -1.755441    0.4364417 1.141980e-01          0</span>
+<span class="co">#&gt; 245 gene_246         1.963091    0.3122343 9.411492e-20          0</span>
+<span class="co">#&gt; 252 gene_253         1.056567    0.2532189 4.792269e-02          0</span>
+<span class="co">#&gt;     BH_adjusted_pval</span>
+<span class="co">#&gt; 7                  0</span>
+<span class="co">#&gt; 9                  0</span>
+<span class="co">#&gt; 54                 0</span>
+<span class="co">#&gt; 61                 0</span>
+<span class="co">#&gt; 245                0</span>
+<span class="co">#&gt; 252                0</span></code></pre></div>
+</div>
+
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
